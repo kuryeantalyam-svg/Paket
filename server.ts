@@ -78,6 +78,10 @@ db.exec(`
     special_request TEXT,
     courier_id TEXT,
     distance REAL,
+    pickup_lat REAL,
+    pickup_lng REAL,
+    delivery_lat REAL,
+    delivery_lng REAL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
@@ -92,6 +96,19 @@ try {
 
 try {
   db.prepare("ALTER TABLE orders ADD COLUMN distance REAL").run();
+} catch (e) {}
+
+try {
+  db.prepare("ALTER TABLE orders ADD COLUMN pickup_lat REAL").run();
+} catch (e) {}
+try {
+  db.prepare("ALTER TABLE orders ADD COLUMN pickup_lng REAL").run();
+} catch (e) {}
+try {
+  db.prepare("ALTER TABLE orders ADD COLUMN delivery_lat REAL").run();
+} catch (e) {}
+try {
+  db.prepare("ALTER TABLE orders ADD COLUMN delivery_lng REAL").run();
 } catch (e) {}
 
 // Log table info for debugging
@@ -267,13 +284,29 @@ async function startServer() {
 
   app.post("/api/orders", (req, res) => {
     try {
-      const { customerName, customerPhone, customerId, pickupAddress, deliveryAddress, vehicleType, paymentMethod, packageType, specialRequest, distance } = req.body;
+      const { 
+        customerName, customerPhone, customerId, 
+        pickupAddress, deliveryAddress, vehicleType, 
+        paymentMethod, packageType, specialRequest, distance,
+        pickup_lat, pickup_lng, delivery_lat, delivery_lng
+      } = req.body;
       const id = Math.random().toString(36).substring(7);
       
       console.log("New order request received:", req.body);
 
-      db.prepare("INSERT INTO orders (id, customer_name, customer_phone, customer_id, pickup_address, delivery_address, vehicle_type, payment_method, package_type, special_request, distance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .run(id, customerName, customerPhone, customerId, pickupAddress, deliveryAddress, vehicleType || 'motorcycle', paymentMethod || 'sender', packageType, specialRequest, distance);
+      db.prepare(`
+        INSERT INTO orders (
+          id, customer_name, customer_phone, customer_id, 
+          pickup_address, delivery_address, vehicle_type, 
+          payment_method, package_type, special_request, distance,
+          pickup_lat, pickup_lng, delivery_lat, delivery_lng
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id, customerName, customerPhone, customerId, 
+        pickupAddress, deliveryAddress, vehicleType || 'motorcycle', 
+        paymentMethod || 'sender', packageType, specialRequest, distance,
+        pickup_lat, pickup_lng, delivery_lat, delivery_lng
+      );
       
       const order = { 
         id, 
@@ -288,6 +321,10 @@ async function startServer() {
         package_type: packageType,
         special_request: specialRequest,
         distance: distance,
+        pickup_lat,
+        pickup_lng,
+        delivery_lat,
+        delivery_lng,
         created_at: new Date().toISOString() 
       };
       

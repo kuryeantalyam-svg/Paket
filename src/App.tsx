@@ -70,6 +70,10 @@ interface Order {
   vehicle_type: VehicleType;
   courier_id?: string;
   distance?: number;
+  pickup_lat?: number;
+  pickup_lng?: number;
+  delivery_lat?: number;
+  delivery_lng?: number;
   created_at: string;
 }
 
@@ -99,6 +103,19 @@ function MapController({ center }: { center: [number, number] }) {
   return null;
 }
 
+async function geocode(address: string) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ", Antalya")}`);
+    const data = await res.json();
+    if (data && data.length > 0) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+  } catch (e) {
+    console.error("Geocoding error:", e);
+  }
+  return null;
+}
+
 const CourierIcon = L.icon({
   iconUrl: 'https://cdn-icons-png.flaticon.com/512/711/711192.png',
   iconSize: [40, 40],
@@ -106,17 +123,52 @@ const CourierIcon = L.icon({
   popupAnchor: [0, -40],
 });
 
-function LeafletMapComponent({ location, locations = [], status }: { location?: CourierLocation | null, locations?: CourierLocation[], status?: OrderStatus }) {
+const PickupIcon = L.icon({
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/1673/1673221.png',
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
+});
+
+const DeliveryIcon = L.icon({
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/149/149060.png',
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
+});
+
+function LeafletMapComponent({ 
+  location, 
+  locations = [], 
+  status,
+  pickupCoords,
+  deliveryCoords
+}: { 
+  location?: CourierLocation | null, 
+  locations?: CourierLocation[], 
+  status?: OrderStatus,
+  pickupCoords?: { lat: number, lng: number },
+  deliveryCoords?: { lat: number, lng: number }
+}) {
   const allLocations = location ? [location] : locations;
-  const center = allLocations.length > 0 ? [allLocations[0].lat, allLocations[0].lng] as [number, number] : ANTALYA_COORDS;
+  
+  // Calculate center based on available points
+  const center = useMemo(() => {
+    if (allLocations.length > 0) return [allLocations[0].lat, allLocations[0].lng] as [number, number];
+    if (pickupCoords) return [pickupCoords.lat, pickupCoords.lng] as [number, number];
+    if (deliveryCoords) return [deliveryCoords.lat, deliveryCoords.lng] as [number, number];
+    return ANTALYA_COORDS;
+  }, [allLocations, pickupCoords, deliveryCoords]);
 
   return (
     <div className="h-full w-full rounded-3xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 relative group">
-      <MapContainer center={center} zoom={allLocations.length > 1 ? 12 : 15} style={{ height: '100%', width: '100%' }}>
+      <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
+        
+        {/* Courier Markers */}
         {allLocations.map((loc, idx) => (
           <Marker key={loc.courierId || idx} position={[loc.lat, loc.lng]} icon={CourierIcon}>
             <Popup className="custom-popup">
@@ -128,11 +180,29 @@ function LeafletMapComponent({ location, locations = [], status }: { location?: 
                 <p className="text-[10px] text-slate-500">
                   {status ? (status === 'accepted' ? 'Alış adresine gidiyor' : 'Teslimat adresine gidiyor') : 'Aktif Kurye'}
                 </p>
-                <p className="text-[9px] text-slate-400 mt-1 italic">Son Güncelleme: {new Date(loc.updated_at).toLocaleTimeString()}</p>
               </div>
             </Popup>
           </Marker>
         ))}
+
+        {/* Pickup Marker */}
+        {pickupCoords && (
+          <Marker position={[pickupCoords.lat, pickupCoords.lng]} icon={PickupIcon}>
+            <Popup>
+              <div className="p-1 font-bold text-xs text-emerald-600">Alış Adresi</div>
+            </Popup>
+          </Marker>
+        )}
+
+        {/* Delivery Marker */}
+        {deliveryCoords && (
+          <Marker position={[deliveryCoords.lat, deliveryCoords.lng]} icon={DeliveryIcon}>
+            <Popup>
+              <div className="p-1 font-bold text-xs text-rose-600">Teslimat Adresi</div>
+            </Popup>
+          </Marker>
+        )}
+
         <MapController center={center} />
       </MapContainer>
       
@@ -708,6 +778,10 @@ export default function App() {
       // Generate a mock distance between 1.5 and 12.0 km
       const mockDistance = parseFloat((Math.random() * (12 - 1.5) + 1.5).toFixed(1));
 
+      // Geocode addresses
+      const pickupCoords = await geocode(pickup);
+      const deliveryCoords = await geocode(delivery);
+
       console.log("Creating order with data:", { 
         customerName, 
         customerPhone,
@@ -718,7 +792,11 @@ export default function App() {
         paymentMethod,
         packageType,
         specialRequest,
-        distance: mockDistance
+        distance: mockDistance,
+        pickup_lat: pickupCoords?.lat,
+        pickup_lng: pickupCoords?.lng,
+        delivery_lat: deliveryCoords?.lat,
+        delivery_lng: deliveryCoords?.lng
       });
 
       const res = await fetch('/api/orders', {
@@ -734,7 +812,11 @@ export default function App() {
           paymentMethod,
           packageType,
           specialRequest,
-          distance: mockDistance
+          distance: mockDistance,
+          pickup_lat: pickupCoords?.lat,
+          pickup_lng: pickupCoords?.lng,
+          delivery_lat: deliveryCoords?.lat,
+          delivery_lng: deliveryCoords?.lng
         })
       });
       
@@ -1691,6 +1773,16 @@ export default function App() {
                               </div>
                             </div>
                           </div>
+
+                          {/* Map Preview for Pending Order */}
+                          {(order.pickup_lat || order.delivery_lat) && (
+                            <div className="h-48 rounded-2xl overflow-hidden border border-slate-100 shadow-inner">
+                              <LeafletMapComponent 
+                                pickupCoords={order.pickup_lat ? { lat: order.pickup_lat, lng: order.pickup_lng! } : undefined}
+                                deliveryCoords={order.delivery_lat ? { lat: order.delivery_lat, lng: order.delivery_lng! } : undefined}
+                              />
+                            </div>
+                          )}
                         </div>
 
                         <div className="md:w-48 flex flex-col justify-center">
@@ -1765,6 +1857,18 @@ export default function App() {
                               <p className="text-sm font-medium">{order.delivery_address}</p>
                             </div>
                           </div>
+
+                          {/* Integrated Map View for Courier */}
+                          {(order.pickup_lat || order.delivery_lat) && (
+                            <div className="h-64 rounded-2xl overflow-hidden border border-white/10 shadow-inner">
+                              <LeafletMapComponent 
+                                location={myLocation} 
+                                pickupCoords={order.pickup_lat ? { lat: order.pickup_lat, lng: order.pickup_lng! } : undefined}
+                                deliveryCoords={order.delivery_lat ? { lat: order.delivery_lat, lng: order.delivery_lng! } : undefined}
+                                status={order.status}
+                              />
+                            </div>
+                          )}
                         </div>
 
                         <div className="md:w-56 flex flex-col justify-center gap-3">
