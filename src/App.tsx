@@ -25,7 +25,8 @@ import {
   CreditCard,
   Wrench,
   Stethoscope,
-  FlaskConical
+  FlaskConical,
+  HelpCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
@@ -520,6 +521,17 @@ export default function App() {
   const watchIdRef = useRef<number | null>(null);
 
   const [logoClicks, setLogoClicks] = useState(0);
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     if (user && user.role === 'customer') {
@@ -1900,7 +1912,15 @@ export default function App() {
                                 Navigasyon (Alış)
                               </button>
                               <button 
-                                onClick={() => handleUpdateStatus(order.id, 'picked_up')}
+                                onClick={() => setConfirmModal({
+                                  show: true,
+                                  title: 'Paketi Aldınız mı?',
+                                  message: 'Müşteriden paketi teslim aldığınızı onaylıyor musunuz?',
+                                  onConfirm: () => {
+                                    handleUpdateStatus(order.id, 'picked_up');
+                                    setConfirmModal(prev => ({ ...prev, show: false }));
+                                  }
+                                })}
                                 className="w-full bg-white text-indigo-600 font-bold py-4 rounded-2xl hover:bg-indigo-50 transition-all shadow-lg"
                               >
                                 Paketi Aldım
@@ -1930,7 +1950,15 @@ export default function App() {
                                 Navigasyon (Teslim)
                               </button>
                               <button 
-                                onClick={() => handleUpdateStatus(order.id, 'delivered')}
+                                onClick={() => setConfirmModal({
+                                  show: true,
+                                  title: 'Teslimat Tamamlandı mı?',
+                                  message: 'Paketi alıcıya başarıyla teslim ettiğinizi onaylıyor musunuz?',
+                                  onConfirm: () => {
+                                    handleUpdateStatus(order.id, 'delivered');
+                                    setConfirmModal(prev => ({ ...prev, show: false }));
+                                  }
+                                })}
                                 className="w-full bg-emerald-500 text-white font-bold py-4 rounded-2xl hover:bg-emerald-600 transition-all shadow-lg"
                               >
                                 Teslim Ettim
@@ -1986,6 +2014,51 @@ export default function App() {
           </div>
         )}
       </main>
+
+      <AnimatePresence>
+        {confirmModal.show && (
+          <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-indigo-600" />
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="bg-indigo-50 p-4 rounded-full">
+                  <HelpCircle className="w-8 h-8 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">{confirmModal.title}</h3>
+                  <p className="text-sm text-slate-500 mt-2">{confirmModal.message}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 w-full pt-4">
+                  <button 
+                    onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+                    className="py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all"
+                  >
+                    Hayır
+                  </button>
+                  <button 
+                    onClick={confirmModal.onConfirm}
+                    className="py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
+                  >
+                    Evet
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showPriceModal && (
