@@ -1297,10 +1297,13 @@ export default function App() {
                       try {
                         const res = await fetch('/api/admin/test-whatsapp', { method: 'POST' });
                         const data = await res.json();
-                        if (data.success) alert(data.message);
-                        else alert(data.error);
+                        if (data.success) {
+                          alert(data.message);
+                        } else {
+                          alert(`Hata: ${data.error || 'Bilinmeyen bir hata oluştu.'}`);
+                        }
                       } catch (e) {
-                        alert('Bağlantı hatası!');
+                        alert('Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.');
                       }
                     }}
                     className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-100 transition-all flex items-center justify-center gap-2"

@@ -27,9 +27,11 @@ const transporter = nodemailer.createTransport({
 
 async function sendWhatsAppNotification(order: any) {
   const webhookUrl = process.env.WHATSAPP_WEBHOOK_URL;
+  console.log("Attempting WhatsApp notification. Webhook URL present:", !!webhookUrl);
+  
   if (!webhookUrl) {
     console.log("WhatsApp Webhook URL missing. Skipping WhatsApp notification.");
-    return;
+    return { success: false, error: "Webhook URL missing in environment variables." };
   }
 
   try {
@@ -41,19 +43,31 @@ async function sendWhatsAppNotification(order: any) {
       `*Mesafe:* ${order.distance ? order.distance.toFixed(2) : '?'} km\n\n` +
       `Uygulamaya git: ${process.env.APP_URL || 'SmartPack'}`;
 
-    // Node 18+ global fetch
-    await fetch(webhookUrl, {
+    console.log("Sending POST request to:", webhookUrl);
+    
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         text: message,
         message: message,
-        orderId: order.id
+        orderId: order.id,
+        timestamp: new Date().toISOString()
       })
     });
+
+    const responseText = await response.text();
+    console.log("Webhook response status:", response.status, "Body:", responseText);
+
+    if (!response.ok) {
+      throw new Error(`Webhook returned status ${response.status}: ${responseText}`);
+    }
+
     console.log("WhatsApp notification sent via webhook.");
+    return { success: true };
   } catch (error) {
     console.error("Error sending WhatsApp notification:", error);
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -324,10 +338,14 @@ async function startServer() {
         vehicle_type: "motorcycle",
         distance: 5.4
       };
-      await sendWhatsAppNotification(testOrder);
-      res.json({ success: true, message: "Test bildirimi gönderildi. Make.com ekranını kontrol edin." });
+      const result = await sendWhatsAppNotification(testOrder);
+      if (result.success) {
+        res.json({ success: true, message: "Test bildirimi gönderildi. Make.com ekranını kontrol edin." });
+      } else {
+        res.status(400).json({ success: false, error: result.error });
+      }
     } catch (error) {
-      res.status(500).json({ error: "Test bildirimi gönderilemedi." });
+      res.status(500).json({ error: "İşlem sırasında beklenmedik bir hata oluştu." });
     }
   });
 
