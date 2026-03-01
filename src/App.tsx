@@ -118,10 +118,10 @@ async function geocode(address: string) {
 }
 
 const CourierIcon = L.icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/711/711192.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -40],
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png',
+  iconSize: [45, 45],
+  iconAnchor: [22, 45],
+  popupAnchor: [0, -45],
 });
 
 const PickupIcon = L.icon({
@@ -240,6 +240,7 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<AppRole>(expectedRole);
   const [error, setError] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   useEffect(() => {
     setRole(expectedRole);
@@ -436,9 +437,38 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
 
               {error && <p className="text-rose-500 text-xs font-bold text-center">{error}</p>}
 
+              {!isLogin && (
+                <div className="space-y-3 pt-2">
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input 
+                      type="checkbox" 
+                      required
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="mt-1 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all"
+                    />
+                    <span className="text-xs text-slate-500 leading-relaxed group-hover:text-slate-700 transition-colors">
+                      {role === 'customer' ? (
+                        <>
+                          <span className="font-bold text-slate-900">Kullanıcı Sözleşmesi</span> ve <span className="font-bold text-slate-900">KVKK Aydınlatma Metni</span>'ni okudum, onaylıyorum. SmartPack'in bir <span className="font-bold text-indigo-600">aracı platform</span> olduğunu, kurye ve müşteri arasındaki hizmet ilişkisinden SmartPack'in doğrudan veya dolaylı sorumluluk kabul etmediğini beyan ederim.
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-bold text-slate-900">Bağımsız Hizmet Sağlayıcı Sözleşmesi</span> ve <span className="font-bold text-slate-900">KVKK Aydınlatma Metni</span>'ni okudum, onaylıyorum. <span className="font-bold text-indigo-600">Kurye çalışan değildir</span>, Platform sadece aracıdır. Sigorta ve vergi yükümlülüğü <span className="font-bold text-slate-900">kuryeye aittir</span>. Platform taşıma sorumlusu değildir; sadece müşteri ile kurye arasında elektronik ortamda aracılık hizmeti sunar. Taşıma hizmetinin ifasından doğan tüm hukuki ve mali sorumluluk hizmeti sunan kuryeye aittir.
+                        </>
+                      )}
+                    </span>
+                  </label>
+                </div>
+              )}
+
               <button 
                 type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all mt-4"
+                disabled={!isLogin ? !agreedToTerms : false}
+                className={cn(
+                  "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all mt-4",
+                  !isLogin && !agreedToTerms && "opacity-50 cursor-not-allowed"
+                )}
               >
                 {isLogin ? 'Giriş Yap' : 'Kayıt Ol'}
               </button>
@@ -1962,12 +1992,6 @@ export default function App() {
                                 className="w-full bg-emerald-500 text-white font-bold py-4 rounded-2xl hover:bg-emerald-600 transition-all shadow-lg"
                               >
                                 Teslim Ettim
-                              </button>
-                              <button 
-                                onClick={() => handleCourierCancelOrder(order.id)}
-                                className="w-full bg-rose-500/10 text-rose-500 font-bold py-4 rounded-2xl hover:bg-rose-500/20 transition-all border border-rose-500/20"
-                              >
-                                Talebi İptal Et
                               </button>
                             </>
                           )}
