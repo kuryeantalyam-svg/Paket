@@ -26,7 +26,11 @@ import {
   Wrench,
   Stethoscope,
   FlaskConical,
-  HelpCircle
+  HelpCircle,
+  X,
+  ShoppingBag,
+  Flower2,
+  Dog
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
@@ -241,6 +245,10 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
   const [role, setRole] = useState<AppRole>(expectedRole);
   const [error, setError] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState<{ show: boolean, type: 'terms' | 'kvkk' | 'courier' }>({
+    show: false,
+    type: 'terms'
+  });
 
   useEffect(() => {
     setRole(expectedRole);
@@ -296,30 +304,42 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               { 
                 icon: Wrench, 
-                title: "Sanayi Yedek Parça", 
-                desc: "Sanayiden acil yedek parça temini ve teslimatı.",
+                title: "Sanayi", 
+                desc: "Yedek parça temini.",
                 color: "bg-amber-50 text-amber-600"
               },
               { 
                 icon: Stethoscope, 
-                title: "Diş Klinik & Laboratuvar", 
-                desc: "Klinik ve laboratuvar arası hassas tıbbi teslimatlar.",
+                title: "Diş Klinik", 
+                desc: "Laboratuvar gönderileri.",
                 color: "bg-emerald-50 text-emerald-600"
               },
               { 
-                icon: FlaskConical, 
-                title: "Laboratuvar Gönderileri", 
-                desc: "Özel taşıma gerektiren laboratuvar numuneleri.",
-                color: "bg-blue-50 text-blue-600"
+                icon: ShoppingBag, 
+                title: "Petshop", 
+                desc: "Hızlı mama & aksesuar.",
+                color: "bg-orange-50 text-orange-600"
+              },
+              { 
+                icon: Flower2, 
+                title: "Çiçek", 
+                desc: "Hassas çiçek teslimatı.",
+                color: "bg-pink-50 text-pink-600"
+              },
+              { 
+                icon: Dog, 
+                title: "Pet Taxi", 
+                desc: "Veteriner ulaşımı.",
+                color: "bg-indigo-50 text-indigo-600"
               },
               { 
                 icon: Package, 
-                title: "Acil Paket & Evrak", 
-                desc: "Şehir içi tüm acil gönderileriniz için yanınızdayız.",
+                title: "Acil Paket", 
+                desc: "Şehir içi hızlı evrak.",
                 color: "bg-rose-50 text-rose-600"
               }
             ].map((item, i) => (
@@ -327,15 +347,15 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
                 key={i}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="flex items-start gap-4 p-6 bg-white rounded-3xl border border-slate-100 shadow-sm"
+                transition={{ delay: i * 0.05 }}
+                className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
               >
-                <div className={cn("p-3 rounded-2xl shrink-0", item.color)}>
-                  <item.icon className="w-6 h-6" />
+                <div className={cn("p-2 rounded-xl shrink-0", item.color)}>
+                  <item.icon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900">{item.title}</h3>
-                  <p className="text-sm text-slate-500 mt-1">{item.desc}</p>
+                  <h3 className="font-bold text-slate-900 text-sm">{item.title}</h3>
+                  <p className="text-[10px] text-slate-500 leading-tight">{item.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -450,11 +470,35 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
                     <span className="text-xs text-slate-500 leading-relaxed group-hover:text-slate-700 transition-colors">
                       {role === 'customer' ? (
                         <>
-                          <span className="font-bold text-slate-900">Kullanıcı Sözleşmesi</span> ve <span className="font-bold text-slate-900">KVKK Aydınlatma Metni</span>'ni okudum, onaylıyorum. SmartPack'in bir <span className="font-bold text-indigo-600">aracı platform</span> olduğunu, kurye ve müşteri arasındaki hizmet ilişkisinden SmartPack'in doğrudan veya dolaylı sorumluluk kabul etmediğini beyan ederim.
+                          <button 
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setShowTermsModal({ show: true, type: 'terms' }); }}
+                            className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
+                          >
+                            Kullanıcı Sözleşmesi
+                          </button> ve <button 
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setShowTermsModal({ show: true, type: 'kvkk' }); }}
+                            className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
+                          >
+                            KVKK Aydınlatma Metni
+                          </button>'ni okudum, onaylıyorum. SmartPack'in bir <span className="font-bold text-indigo-600">aracı platform</span> olduğunu, kurye ve müşteri arasındaki hizmet ilişkisinden SmartPack'in doğrudan veya dolaylı sorumluluk kabul etmediğini beyan ederim.
                         </>
                       ) : (
                         <>
-                          <span className="font-bold text-slate-900">Bağımsız Hizmet Sağlayıcı Sözleşmesi</span> ve <span className="font-bold text-slate-900">KVKK Aydınlatma Metni</span>'ni okudum, onaylıyorum. <span className="font-bold text-indigo-600">Kurye çalışan değildir</span>, Platform sadece aracıdır. Sigorta ve vergi yükümlülüğü <span className="font-bold text-slate-900">kuryeye aittir</span>. Platform taşıma sorumlusu değildir; sadece müşteri ile kurye arasında elektronik ortamda aracılık hizmeti sunar. Taşıma hizmetinin ifasından doğan tüm hukuki ve mali sorumluluk hizmeti sunan kuryeye aittir.
+                          <button 
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setShowTermsModal({ show: true, type: 'courier' }); }}
+                            className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
+                          >
+                            Bağımsız Hizmet Sağlayıcı Sözleşmesi
+                          </button> ve <button 
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setShowTermsModal({ show: true, type: 'kvkk' }); }}
+                            className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
+                          >
+                            KVKK Aydınlatma Metni
+                          </button>'ni okudum, onaylıyorum. <span className="font-bold text-indigo-600">Kurye çalışan değildir</span>, Platform sadece aracıdır. Sigorta ve vergi yükümlülüğü <span className="font-bold text-slate-900">kuryeye aittir</span>. Platform taşıma sorumlusu değildir; sadece müşteri ile kurye arasında elektronik ortamda aracılık hizmeti sunar. Taşıma hizmetinin ifasından doğan tüm hukuki ve mali sorumluluk hizmeti sunan kuryeye aittir.
                         </>
                       )}
                     </span>
@@ -484,6 +528,81 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
             </div>
           </motion.div>
         </div>
+
+        {/* Terms Modal */}
+        <AnimatePresence>
+          {showTermsModal.show && (
+            <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowTermsModal(prev => ({ ...prev, show: false }))}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="relative bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+              >
+                <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                  <h3 className="text-xl font-bold text-slate-900">
+                    {showTermsModal.type === 'terms' && 'Kullanıcı Sözleşmesi'}
+                    {showTermsModal.type === 'kvkk' && 'KVKK Aydınlatma Metni'}
+                    {showTermsModal.type === 'courier' && 'Bağımsız Hizmet Sağlayıcı Sözleşmesi'}
+                  </h3>
+                  <button 
+                    onClick={() => setShowTermsModal(prev => ({ ...prev, show: false }))}
+                    className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                  >
+                    <X className="w-6 h-6 text-slate-500" />
+                  </button>
+                </div>
+                <div className="p-8 overflow-y-auto text-sm text-slate-600 leading-relaxed space-y-4">
+                  {showTermsModal.type === 'terms' && (
+                    <>
+                      <p className="font-bold text-slate-900">1. Taraflar</p>
+                      <p>İşbu sözleşme, SmartPack platformu ile platform üzerinden hizmet alan Müşteri arasında akdedilmiştir.</p>
+                      <p className="font-bold text-slate-900">2. Hizmetin Niteliği</p>
+                      <p>SmartPack, kuryeler ile müşterileri bir araya getiren bir teknoloji platformudur. SmartPack, taşıma hizmetinin bizzat sağlayıcısı değildir.</p>
+                      <p className="font-bold text-slate-900">3. Sorumluluk Sınırları</p>
+                      <p>Müşteri, gönderinin içeriğinden ve yasalara uygunluğundan sorumludur. SmartPack, kurye tarafından sunulan hizmetin kalitesi veya ifası ile ilgili doğrudan sorumluluk kabul etmez.</p>
+                    </>
+                  )}
+                  {showTermsModal.type === 'kvkk' && (
+                    <>
+                      <p className="font-bold text-slate-900">1. Veri Sorumlusu</p>
+                      <p>SmartPack olarak kişisel verilerinizin güvenliğine önem veriyoruz.</p>
+                      <p className="font-bold text-slate-900">2. İşlenen Veriler</p>
+                      <p>Ad, soyad, telefon numarası, e-posta adresi ve konum verileriniz hizmetin ifası amacıyla işlenmektedir.</p>
+                      <p className="font-bold text-slate-900">3. İşleme Amacı</p>
+                      <p>Verileriniz, kurye taleplerinizin yönetilmesi, güvenli teslimatın sağlanması ve yasal yükümlülüklerin yerine getirilmesi amacıyla işlenir.</p>
+                    </>
+                  )}
+                  {showTermsModal.type === 'courier' && (
+                    <>
+                      <p className="font-bold text-slate-900">1. Bağımsız Statü</p>
+                      <p>Kurye, SmartPack'in bir çalışanı veya temsilcisi değildir. Kurye, kendi nam ve hesabına çalışan bağımsız bir hizmet sağlayıcıdır.</p>
+                      <p className="font-bold text-slate-900">2. Vergi ve Sigorta</p>
+                      <p>Kurye, kendi vergi mükellefiyetinden, sosyal güvenlik primlerinden ve her türlü sigorta yükümlülüğünden bizzat sorumludur.</p>
+                      <p className="font-bold text-slate-900">3. Platformun Rolü</p>
+                      <p>Platform, sadece müşteri ile kurye arasında elektronik ortamda aracılık hizmeti sunar. Taşıma hizmetinin ifasından doğan tüm hukuki ve mali sorumluluk kuryeye aittir.</p>
+                    </>
+                  )}
+                </div>
+                <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+                  <button 
+                    onClick={() => setShowTermsModal(prev => ({ ...prev, show: false }))}
+                    className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all"
+                  >
+                    Anladım
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -1520,7 +1639,6 @@ export default function App() {
                       <h4 className="font-bold mb-4">Neden SmartPack?</h4>
                       <ul className="space-y-3">
                         {[
-                          "30 dakikada kapınızda",
                           "Canlı takip imkanı",
                           "Güvenilir kurye ağı",
                           "7/24 kesintisiz hizmet"
