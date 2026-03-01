@@ -283,252 +283,257 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        {/* Auth Form */}
-        <div className="flex justify-center">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100/50 border border-slate-200 w-full max-w-md"
-          >
-            <div className="flex flex-col items-center mb-8">
-              <div className="bg-indigo-600 p-4 rounded-2xl mb-4 shadow-lg shadow-indigo-200">
-                <Package className="w-8 h-8 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight">SmartPack</h1>
-              <p className="text-slate-500 text-sm mt-1">
-                {isLogin ? 'Hesabınıza giriş yapın' : 'Yeni hesap oluşturun'}
-              </p>
-            </div>
+      <div className="max-w-6xl w-full flex flex-col gap-12">
+        {/* Centered Marketing Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center space-y-4"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-widest">
+            <MapPin className="w-3 h-3" />
+            Antalya İçi Hızlı Teslimat
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight">
+            Antalya'nın En Akıllı <span className="text-indigo-600">Kurye Ağı</span>
+          </h1>
+          <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto">
+            Sanayiden kliniğe, her noktaya güvenilir ve hızlı teslimat çözümleri sunuyoruz.
+          </p>
+        </motion.div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Ad Soyad</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                      placeholder="Ahmet Yılmaz"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Telefon</label>
-                    <input 
-                      type="tel" 
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                      placeholder="05XX XXX XX XX"
-                    />
-                  </div>
-                </>
-              )}
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">E-posta</label>
-                <input 
-                  type="email" 
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                  placeholder="ornek@mail.com"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Şifre</label>
-                <input 
-                  type="password" 
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Rolünüz</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    type="button"
-                    onClick={() => setRole('customer')}
-                    className={cn(
-                      "py-3 rounded-xl text-sm font-bold border transition-all",
-                      role === 'customer' ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-slate-50 border-slate-200 text-slate-500"
-                    )}
-                  >
-                    Müşteri
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setRole('courier')}
-                    className={cn(
-                      "py-3 rounded-xl text-sm font-bold border transition-all",
-                      role === 'courier' ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-slate-50 border-slate-200 text-slate-500"
-                    )}
-                  >
-                    Kurye
-                  </button>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          {/* Auth Form */}
+          <div className="flex justify-center">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100/50 border border-slate-200 w-full max-w-md"
+            >
+              <div className="flex flex-col items-center mb-8">
+                <div className="bg-indigo-600 p-4 rounded-2xl mb-4 shadow-lg shadow-indigo-200">
+                  <Package className="w-8 h-8 text-white" />
                 </div>
+                <h1 className="text-2xl font-bold tracking-tight">SmartPack</h1>
+                <p className="text-slate-500 text-sm mt-1">
+                  {isLogin ? 'Hesabınıza giriş yapın' : 'Yeni hesap oluşturun'}
+                </p>
               </div>
 
-              {error && <p className="text-rose-500 text-xs font-bold text-center">{error}</p>}
-
-              {!isLogin && (
-                <div className="space-y-3 pt-2">
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input 
-                      type="checkbox" 
-                      required
-                      checked={agreedToTerms}
-                      onChange={(e) => setAgreedToTerms(e.target.checked)}
-                      className="mt-1 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all"
-                    />
-                    <span className="text-xs text-slate-500 leading-relaxed group-hover:text-slate-700 transition-colors">
-                      {role === 'customer' ? (
-                        <>
-                          <button 
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setShowTermsModal({ show: true, type: 'terms' }); }}
-                            className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
-                          >
-                            Kullanıcı Sözleşmesi
-                          </button> ve <button 
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setShowTermsModal({ show: true, type: 'kvkk' }); }}
-                            className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
-                          >
-                            KVKK Aydınlatma Metni
-                          </button>'ni okudum, onaylıyorum.
-                        </>
-                      ) : (
-                        <>
-                          <button 
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setShowTermsModal({ show: true, type: 'courier' }); }}
-                            className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
-                          >
-                            Bağımsız Hizmet Sağlayıcı Sözleşmesi
-                          </button> ve <button 
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setShowTermsModal({ show: true, type: 'kvkk' }); }}
-                            className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
-                          >
-                            KVKK Aydınlatma Metni
-                          </button>'ni okudum, onaylıyorum.
-                        </>
-                      )}
-                    </span>
-                  </label>
-                </div>
-              )}
-
-              <button 
-                type="submit"
-                disabled={!isLogin ? !agreedToTerms : false}
-                className={cn(
-                  "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all mt-4",
-                  !isLogin && !agreedToTerms && "opacity-50 cursor-not-allowed"
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {!isLogin && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Ad Soyad</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                        placeholder="Ahmet Yılmaz"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Telefon</label>
+                      <input 
+                        type="tel" 
+                        required
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                        placeholder="05XX XXX XX XX"
+                      />
+                    </div>
+                  </>
                 )}
-              >
-                {isLogin ? 'Giriş Yap' : 'Kayıt Ol'}
-              </button>
-            </form>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">E-posta</label>
+                  <input 
+                    type="email" 
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    placeholder="ornek@mail.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Şifre</label>
+                  <input 
+                    type="password" 
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    placeholder="••••••••"
+                  />
+                </div>
 
-            <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-              <button 
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-sm font-bold text-indigo-600 hover:text-indigo-700"
-              >
-                {isLogin ? 'Hesabınız yok mu? Kayıt olun' : 'Zaten hesabınız var mı? Giriş yapın'}
-              </button>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Rolünüz</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => setRole('customer')}
+                      className={cn(
+                        "py-3 rounded-xl text-sm font-bold border transition-all",
+                        role === 'customer' ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-slate-50 border-slate-200 text-slate-500"
+                      )}
+                    >
+                      Müşteri
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setRole('courier')}
+                      className={cn(
+                        "py-3 rounded-xl text-sm font-bold border transition-all",
+                        role === 'courier' ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-slate-50 border-slate-200 text-slate-500"
+                      )}
+                    >
+                      Kurye
+                    </button>
+                  </div>
+                </div>
+
+                {error && <p className="text-rose-500 text-xs font-bold text-center">{error}</p>}
+
+                {!isLogin && (
+                  <div className="space-y-3 pt-2">
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox" 
+                        required
+                        checked={agreedToTerms}
+                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                        className="mt-1 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all"
+                      />
+                      <span className="text-xs text-slate-500 leading-relaxed group-hover:text-slate-700 transition-colors">
+                        {role === 'customer' ? (
+                          <>
+                            <button 
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setShowTermsModal({ show: true, type: 'terms' }); }}
+                              className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
+                            >
+                              Kullanıcı Sözleşmesi
+                            </button> ve <button 
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setShowTermsModal({ show: true, type: 'kvkk' }); }}
+                              className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
+                            >
+                              KVKK Aydınlatma Metni
+                            </button>'ni okudum, onaylıyorum.
+                          </>
+                        ) : (
+                          <>
+                            <button 
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setShowTermsModal({ show: true, type: 'courier' }); }}
+                              className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
+                            >
+                              Bağımsız Hizmet Sağlayıcı Sözleşmesi
+                            </button> ve <button 
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setShowTermsModal({ show: true, type: 'kvkk' }); }}
+                              className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
+                            >
+                              KVKK Aydınlatma Metni
+                            </button>'ni okudum, onaylıyorum.
+                          </>
+                        )}
+                      </span>
+                    </label>
+                  </div>
+                )}
+
+                <button 
+                  type="submit"
+                  disabled={!isLogin ? !agreedToTerms : false}
+                  className={cn(
+                    "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all mt-4",
+                    !isLogin && !agreedToTerms && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  {isLogin ? 'Giriş Yap' : 'Kayıt Ol'}
+                </button>
+              </form>
+
+              <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+                <button 
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="text-sm font-bold text-indigo-600 hover:text-indigo-700"
+                >
+                  {isLogin ? 'Hesabınız yok mu? Kayıt olun' : 'Zaten hesabınız var mı? Giriş yapın'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Marketing Content (Services Grid) */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-8"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                { 
+                  icon: Wrench, 
+                  title: "Sanayi", 
+                  desc: "Yedek parça temini.",
+                  color: "bg-amber-50 text-amber-600"
+                },
+                { 
+                  icon: Stethoscope, 
+                  title: "Diş Klinik", 
+                  desc: "Laboratuvar gönderileri.",
+                  color: "bg-emerald-50 text-emerald-600"
+                },
+                { 
+                  icon: ShoppingBag, 
+                  title: "Petshop", 
+                  desc: "Hızlı mama & aksesuar.",
+                  color: "bg-orange-50 text-orange-600"
+                },
+                { 
+                  icon: Flower2, 
+                  title: "Çiçek", 
+                  desc: "Hassas çiçek teslimatı.",
+                  color: "bg-pink-50 text-pink-600"
+                },
+                { 
+                  icon: Dog, 
+                  title: "Pet Taxi", 
+                  desc: "Veteriner ulaşımı.",
+                  color: "bg-indigo-50 text-indigo-600"
+                },
+                { 
+                  icon: Package, 
+                  title: "Acil Paket", 
+                  desc: "Şehir içi hızlı evrak.",
+                  color: "bg-rose-50 text-rose-600"
+                }
+              ].map((item, i) => (
+                <motion.div 
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className={cn("p-2 rounded-xl shrink-0", item.color)}>
+                    <item.icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm">{item.title}</h3>
+                    <p className="text-[10px] text-slate-500 leading-tight">{item.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </motion.div>
         </div>
-
-        {/* Marketing Content */}
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="space-y-8"
-        >
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-widest">
-              <MapPin className="w-3 h-3" />
-              Antalya İçi Hızlı Teslimat
-            </div>
-            <h1 className="text-5xl font-black text-slate-900 leading-tight">
-              Antalya'nın En Akıllı <br />
-              <span className="text-indigo-600">Kurye Ağı</span>
-            </h1>
-            <p className="text-xl text-slate-500 max-w-md">
-              Sanayiden kliniğe, her noktaya güvenilir ve hızlı teslimat çözümleri sunuyoruz.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { 
-                icon: Wrench, 
-                title: "Sanayi", 
-                desc: "Yedek parça temini.",
-                color: "bg-amber-50 text-amber-600"
-              },
-              { 
-                icon: Stethoscope, 
-                title: "Diş Klinik", 
-                desc: "Laboratuvar gönderileri.",
-                color: "bg-emerald-50 text-emerald-600"
-              },
-              { 
-                icon: ShoppingBag, 
-                title: "Petshop", 
-                desc: "Hızlı mama & aksesuar.",
-                color: "bg-orange-50 text-orange-600"
-              },
-              { 
-                icon: Flower2, 
-                title: "Çiçek", 
-                desc: "Hassas çiçek teslimatı.",
-                color: "bg-pink-50 text-pink-600"
-              },
-              { 
-                icon: Dog, 
-                title: "Pet Taxi", 
-                desc: "Veteriner ulaşımı.",
-                color: "bg-indigo-50 text-indigo-600"
-              },
-              { 
-                icon: Package, 
-                title: "Acil Paket", 
-                desc: "Şehir içi hızlı evrak.",
-                color: "bg-rose-50 text-rose-600"
-              }
-            ].map((item, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className={cn("p-2 rounded-xl shrink-0", item.color)}>
-                  <item.icon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm">{item.title}</h3>
-                  <p className="text-[10px] text-slate-500 leading-tight">{item.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
    {/* Terms Modal */}
         <AnimatePresence>
           {showTermsModal.show && (
@@ -604,8 +609,9 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
           )}
         </AnimatePresence>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
 export default function App() {
   const [user, setUser] = useState<UserAccount | null>(() => {
