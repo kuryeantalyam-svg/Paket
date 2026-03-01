@@ -284,84 +284,6 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
       <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        {/* Marketing Content */}
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="space-y-8"
-        >
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-widest">
-              <MapPin className="w-3 h-3" />
-              Antalya İçi Hızlı Teslimat
-            </div>
-            <h1 className="text-5xl font-black text-slate-900 leading-tight">
-              Antalya'nın En Akıllı <br />
-              <span className="text-indigo-600">Kurye Ağı</span>
-            </h1>
-            <p className="text-xl text-slate-500 max-w-md">
-              Sanayiden kliniğe, her noktaya güvenilir ve hızlı teslimat çözümleri sunuyoruz.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { 
-                icon: Wrench, 
-                title: "Sanayi", 
-                desc: "Yedek parça temini.",
-                color: "bg-amber-50 text-amber-600"
-              },
-              { 
-                icon: Stethoscope, 
-                title: "Diş Klinik", 
-                desc: "Laboratuvar gönderileri.",
-                color: "bg-emerald-50 text-emerald-600"
-              },
-              { 
-                icon: ShoppingBag, 
-                title: "Petshop", 
-                desc: "Hızlı mama & aksesuar.",
-                color: "bg-orange-50 text-orange-600"
-              },
-              { 
-                icon: Flower2, 
-                title: "Çiçek", 
-                desc: "Hassas çiçek teslimatı.",
-                color: "bg-pink-50 text-pink-600"
-              },
-              { 
-                icon: Dog, 
-                title: "Pet Taxi", 
-                desc: "Veteriner ulaşımı.",
-                color: "bg-indigo-50 text-indigo-600"
-              },
-              { 
-                icon: Package, 
-                title: "Acil Paket", 
-                desc: "Şehir içi hızlı evrak.",
-                color: "bg-rose-50 text-rose-600"
-              }
-            ].map((item, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className={cn("p-2 rounded-xl shrink-0", item.color)}>
-                  <item.icon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm">{item.title}</h3>
-                  <p className="text-[10px] text-slate-500 leading-tight">{item.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
         {/* Auth Form */}
         <div className="flex justify-center">
           <motion.div 
@@ -482,7 +404,7 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
                             className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
                           >
                             KVKK Aydınlatma Metni
-                          </button>'ni okudum, onaylıyorum. SmartPack'in bir <span className="font-bold text-indigo-600">aracı platform</span> olduğunu, kurye ve müşteri arasındaki hizmet ilişkisinden SmartPack'in doğrudan veya dolaylı sorumluluk kabul etmediğini beyan ederim.
+                          </button>'ni okudum, onaylıyorum.
                         </>
                       ) : (
                         <>
@@ -498,7 +420,7 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
                             className="font-bold text-slate-900 underline decoration-slate-300 hover:decoration-indigo-500"
                           >
                             KVKK Aydınlatma Metni
-                          </button>'ni okudum, onaylıyorum. <span className="font-bold text-indigo-600">Kurye çalışan değildir</span>, Platform sadece aracıdır. Sigorta ve vergi yükümlülüğü <span className="font-bold text-slate-900">kuryeye aittir</span>. Platform taşıma sorumlusu değildir; sadece müşteri ile kurye arasında elektronik ortamda aracılık hizmeti sunar. Taşıma hizmetinin ifasından doğan tüm hukuki ve mali sorumluluk hizmeti sunan kuryeye aittir.
+                          </button>'ni okudum, onaylıyorum.
                         </>
                       )}
                     </span>
@@ -529,7 +451,85 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
           </motion.div>
         </div>
 
-        {/* Terms Modal */}
+        {/* Marketing Content */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="space-y-8"
+        >
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-widest">
+              <MapPin className="w-3 h-3" />
+              Antalya İçi Hızlı Teslimat
+            </div>
+            <h1 className="text-5xl font-black text-slate-900 leading-tight">
+              Antalya'nın En Akıllı <br />
+              <span className="text-indigo-600">Kurye Ağı</span>
+            </h1>
+            <p className="text-xl text-slate-500 max-w-md">
+              Sanayiden kliniğe, her noktaya güvenilir ve hızlı teslimat çözümleri sunuyoruz.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              { 
+                icon: Wrench, 
+                title: "Sanayi", 
+                desc: "Yedek parça temini.",
+                color: "bg-amber-50 text-amber-600"
+              },
+              { 
+                icon: Stethoscope, 
+                title: "Diş Klinik", 
+                desc: "Laboratuvar gönderileri.",
+                color: "bg-emerald-50 text-emerald-600"
+              },
+              { 
+                icon: ShoppingBag, 
+                title: "Petshop", 
+                desc: "Hızlı mama & aksesuar.",
+                color: "bg-orange-50 text-orange-600"
+              },
+              { 
+                icon: Flower2, 
+                title: "Çiçek", 
+                desc: "Hassas çiçek teslimatı.",
+                color: "bg-pink-50 text-pink-600"
+              },
+              { 
+                icon: Dog, 
+                title: "Pet Taxi", 
+                desc: "Veteriner ulaşımı.",
+                color: "bg-indigo-50 text-indigo-600"
+              },
+              { 
+                icon: Package, 
+                title: "Acil Paket", 
+                desc: "Şehir içi hızlı evrak.",
+                color: "bg-rose-50 text-rose-600"
+              }
+            ].map((item, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className={cn("p-2 rounded-xl shrink-0", item.color)}>
+                  <item.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">{item.title}</h3>
+                  <p className="text-[10px] text-slate-500 leading-tight">{item.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+   {/* Terms Modal */}
         <AnimatePresence>
           {showTermsModal.show && (
             <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4">
@@ -604,9 +604,8 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
           )}
         </AnimatePresence>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
 export default function App() {
   const [user, setUser] = useState<UserAccount | null>(() => {
