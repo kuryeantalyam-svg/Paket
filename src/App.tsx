@@ -627,6 +627,7 @@ export default function App() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [onlineCouriers, setOnlineCouriers] = useState(0);
+  const [webhookConfigured, setWebhookConfigured] = useState(false);
   const [activeOrder, setActiveOrder] = useState<Order | null>(() => {
     const saved = localStorage.getItem('smartpack_active_order');
     return saved ? JSON.parse(saved) : null;
@@ -875,7 +876,10 @@ export default function App() {
     if (role === 'admin') {
       fetch('/api/admin/users').then(res => res.json()).then(setUsers);
       const fetchStats = () => {
-        fetch('/api/admin/stats').then(res => res.json()).then(data => setOnlineCouriers(data.onlineCouriers));
+        fetch('/api/admin/stats').then(res => res.json()).then(data => {
+          setOnlineCouriers(data.onlineCouriers);
+          setWebhookConfigured(data.webhookConfigured);
+        });
         fetch('/api/couriers').then(res => res.json()).then(setAllCourierLocations);
       };
       fetchStats();
@@ -1280,6 +1284,63 @@ export default function App() {
                       Bildirim Gönder
                     </button>
                   </form>
+                </div>
+
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-emerald-50 p-4 rounded-2xl">
+                        <MessageCircle className="w-7 h-7 text-emerald-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold">WhatsApp Test</h3>
+                        <p className="text-sm text-slate-400">Bağlantıyı doğrula</p>
+                      </div>
+                    </div>
+                    <div className={cn(
+                      "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5",
+                      webhookConfigured ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"
+                    )}>
+                      <div className={cn("w-1.5 h-1.5 rounded-full", webhookConfigured ? "bg-emerald-500" : "bg-rose-500")}></div>
+                      {webhookConfigured ? "Bağlı" : "Bağlı Değil"}
+                    </div>
+                  </div>
+                  
+                  {!webhookConfigured && (
+                    <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs leading-relaxed">
+                      <p className="font-bold mb-1">⚠️ Webhook URL Eksik!</p>
+                      <p>Secrets panelinden <b>WHATSAPP_WEBHOOK_URL</b> anahtarını tanımlamanız gerekiyor.</p>
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/admin/test-whatsapp', { method: 'POST' });
+                        const data = await res.json();
+                        if (data.success) {
+                          alert(data.message);
+                        } else {
+                          alert(`Hata: ${data.error || 'Bilinmeyen bir hata oluştu.'}`);
+                        }
+                      } catch (e) {
+                        alert('Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.');
+                      }
+                    }}
+                    className={cn(
+                      "w-full font-bold py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2",
+                      webhookConfigured 
+                        ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-100" 
+                        : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                    )}
+                    disabled={!webhookConfigured}
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    Bağlantıyı Test Et
+                  </button>
+                  <p className="text-[10px] text-slate-400 mt-4 leading-relaxed italic">
+                    * Bu buton Zapier/Make'e test verisi gönderir. Eğer "Bağlı Değil" yazıyorsa önce Secrets panelini kontrol edin.
+                  </p>
                 </div>
               </div>
 

@@ -315,7 +315,31 @@ async function startServer() {
   app.get("/api/admin/stats", (req, res) => {
     const onlineCouriers = Array.from(clients.values())
       .filter(c => c.role === 'courier').length;
-    res.json({ onlineCouriers });
+    const webhookConfigured = !!process.env.WHATSAPP_WEBHOOK_URL;
+    res.json({ onlineCouriers, webhookConfigured });
+  });
+
+  app.post("/api/admin/test-whatsapp", async (req, res) => {
+    try {
+      const testOrder = {
+        id: "TEST-" + Math.floor(Math.random() * 1000),
+        customer_name: "Test Kullanıcısı",
+        pickup_address: "Antalya Merkez",
+        delivery_address: "Konyaaltı Sahil",
+        vehicle_type: "motorcycle",
+        distance: 5.4,
+        package_type: "Test Paketi",
+        payment_method: "sender"
+      };
+      const result = await sendWhatsAppNotification(testOrder);
+      if (result.success) {
+        res.json({ success: true, message: "Test bildirimi başarıyla gönderildi! Lütfen Zapier/Make ekranını kontrol edin." });
+      } else {
+        res.status(400).json({ success: false, error: result.error });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Sunucu tarafında bir hata oluştu: " + (error instanceof Error ? error.message : String(error)) });
+    }
   });
 
   app.post("/api/admin/notify", (req, res) => {
