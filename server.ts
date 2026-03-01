@@ -28,24 +28,28 @@ const transporter = nodemailer.createTransport({
 
 async function sendWhatsAppNotification(order: any) {
   const webhookUrl = process.env.WHATSAPP_WEBHOOK_URL;
-  console.log("Attempting WhatsApp notification. Webhook URL present:", !!webhookUrl);
   
   if (!webhookUrl) {
     console.log("WhatsApp Webhook URL missing. Skipping WhatsApp notification.");
-    return { success: false, error: "Webhook URL missing in environment variables." };
+    return { success: false, error: "Webhook URL missing." };
   }
 
   try {
+    const vehicleInfo = order.vehicle_type === 'motorcycle' ? 'Motosiklet' : 
+                       order.vehicle_type === 'car' ? 'Araba' : 'Panelvan';
+    
     const message = `*Yeni Paket Talebi!* 📦\n\n` +
+      `*Sipariş No:* #${order.id}\n` +
       `*Müşteri:* ${order.customer_name}\n` +
+      `*Telefon:* ${order.customer_phone || 'Belirtilmedi'}\n` +
       `*Alım:* ${order.pickup_address}\n` +
       `*Teslim:* ${order.delivery_address}\n` +
-      `*Araç:* ${order.vehicle_type}\n` +
-      `*Mesafe:* ${order.distance ? order.distance.toFixed(2) : '?'} km\n\n` +
+      `*Araç:* ${vehicleInfo}\n` +
+      `*Paket:* ${order.package_type || 'Standart'}\n` +
+      `*Mesafe:* ${order.distance ? order.distance.toFixed(2) : '?'} km\n` +
+      `*Ödeme:* ${order.payment_method === 'sender' ? 'Gönderici Ödemeli' : 'Alıcı Ödemeli'}\n\n` +
       `Uygulamaya git: ${process.env.APP_URL || 'SmartPack'}`;
 
-    console.log("Sending POST request to:", webhookUrl);
-    
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -53,21 +57,24 @@ async function sendWhatsAppNotification(order: any) {
         text: message,
         message: message,
         orderId: order.id,
+        customerName: order.customer_name,
+        pickup: order.pickup_address,
+        delivery: order.delivery_address,
+        vehicle: vehicleInfo,
+        distance: order.distance,
         timestamp: new Date().toISOString()
       })
     });
 
-    const responseText = await response.text();
-    console.log("Webhook response status:", response.status, "Body:", responseText);
-
     if (!response.ok) {
-      throw new Error(`Webhook returned status ${response.status}: ${responseText}`);
+      const errorText = await response.text();
+      throw new Error(`Webhook error (${response.status}): ${errorText}`);
     }
 
-    console.log("WhatsApp notification sent via webhook.");
+    console.log("WhatsApp notification successfully sent to Albato.");
     return { success: true };
   } catch (error) {
-    console.error("Error sending WhatsApp notification:", error);
+    console.error("WhatsApp notification failed:", error);
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -327,27 +334,6 @@ async function startServer() {
       }
     });
     res.json({ success: true });
-  });
-
-  app.post("/api/admin/test-whatsapp", async (req, res) => {
-    try {
-      const testOrder = {
-        id: "TEST-123",
-        customer_name: "Test Kullanıcısı",
-        pickup_address: "Antalya Merkez",
-        delivery_address: "Konyaaltı Sahil",
-        vehicle_type: "motorcycle",
-        distance: 5.4
-      };
-      const result = await sendWhatsAppNotification(testOrder);
-      if (result.success) {
-        res.json({ success: true, message: "Test bildirimi gönderildi. Make.com ekranını kontrol edin." });
-      } else {
-        res.status(400).json({ success: false, error: result.error });
-      }
-    } catch (error) {
-      res.status(500).json({ error: "İşlem sırasında beklenmedik bir hata oluştu." });
-    }
   });
 
   app.post("/api/orders", (req, res) => {
