@@ -1281,6 +1281,37 @@ export default function App() {
                     </button>
                   </form>
                 </div>
+
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="bg-emerald-50 p-4 rounded-2xl">
+                      <MessageCircle className="w-7 h-7 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold">WhatsApp Test</h3>
+                      <p className="text-sm text-slate-400">Make.com bağlantısını doğrula</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/admin/test-whatsapp', { method: 'POST' });
+                        const data = await res.json();
+                        if (data.success) alert(data.message);
+                        else alert(data.error);
+                      } catch (e) {
+                        alert('Bağlantı hatası!');
+                      }
+                    }}
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-100 transition-all flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    Bağlantıyı Test Et
+                  </button>
+                  <p className="text-[10px] text-slate-400 mt-4 leading-relaxed italic">
+                    * Bu buton Make.com'a test verisi gönderir. Make.com'da "Waiting for data" aşamasındayken buna basın.
+                  </p>
+                </div>
               </div>
 
               <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">

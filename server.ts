@@ -314,6 +314,23 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  app.post("/api/admin/test-whatsapp", async (req, res) => {
+    try {
+      const testOrder = {
+        id: "TEST-123",
+        customer_name: "Test Kullanıcısı",
+        pickup_address: "Antalya Merkez",
+        delivery_address: "Konyaaltı Sahil",
+        vehicle_type: "motorcycle",
+        distance: 5.4
+      };
+      await sendWhatsAppNotification(testOrder);
+      res.json({ success: true, message: "Test bildirimi gönderildi. Make.com ekranını kontrol edin." });
+    } catch (error) {
+      res.status(500).json({ error: "Test bildirimi gönderilemedi." });
+    }
+  });
+
   app.post("/api/orders", (req, res) => {
     try {
       const { 
