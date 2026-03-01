@@ -27,6 +27,7 @@ import {
   Stethoscope,
   FlaskConical,
   HelpCircle,
+  MessageCircle,
   X,
   ShoppingBag,
   Flower2,
@@ -1779,6 +1780,15 @@ export default function App() {
                                     <Phone className="w-5 h-5" />
                                   </a>
                                 )}
+                                <a 
+                                  href={`https://wa.me/?text=${encodeURIComponent(`*Yeni Paket Talebi!* 📦\n\n*Takip No:* #${activeOrder.id}\n*Alım:* ${activeOrder.pickup_address}\n*Teslim:* ${activeOrder.delivery_address}\n*Araç:* ${activeOrder.vehicle_type}\n\nSmartPack Uygulaması`)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-4 bg-emerald-500 text-white rounded-2xl shadow-sm hover:bg-emerald-600 transition-colors"
+                                  title="WhatsApp ile Paylaş"
+                                >
+                                  <MessageCircle className="w-5 h-5" />
+                                </a>
                               </div>
                             </div>
                           </div>

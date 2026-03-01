@@ -25,6 +25,38 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+async function sendWhatsAppNotification(order: any) {
+  const webhookUrl = process.env.WHATSAPP_WEBHOOK_URL;
+  if (!webhookUrl) {
+    console.log("WhatsApp Webhook URL missing. Skipping WhatsApp notification.");
+    return;
+  }
+
+  try {
+    const message = `*Yeni Paket Talebi!* 📦\n\n` +
+      `*Müşteri:* ${order.customer_name}\n` +
+      `*Alım:* ${order.pickup_address}\n` +
+      `*Teslim:* ${order.delivery_address}\n` +
+      `*Araç:* ${order.vehicle_type}\n` +
+      `*Mesafe:* ${order.distance ? order.distance.toFixed(2) : '?'} km\n\n` +
+      `Uygulamaya git: ${process.env.APP_URL || 'SmartPack'}`;
+
+    // Node 18+ global fetch
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        text: message,
+        message: message,
+        orderId: order.id
+      })
+    });
+    console.log("WhatsApp notification sent via webhook.");
+  } catch (error) {
+    console.error("Error sending WhatsApp notification:", error);
+  }
+}
+
 async function sendEmailToCouriers(order: any) {
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
     console.log("Email configuration missing. Skipping email notification.");
@@ -330,6 +362,9 @@ async function startServer() {
       
       // Send email notifications to couriers
       sendEmailToCouriers(order);
+      
+      // Send WhatsApp notification to group via webhook
+      sendWhatsAppNotification(order);
 
       broadcast({
         type: "new_order",
