@@ -347,6 +347,29 @@ async function startServer() {
     }
   });
 
+  app.post("/api/admin/test-email", async (req, res) => {
+    try {
+      const testOrder = {
+        id: "TEST-EMAIL",
+        pickup_address: "Antalya Merkez",
+        delivery_address: "Konyaaltı Sahil",
+        vehicle_type: "motorcycle"
+      };
+      
+      if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "SMTP ayarları eksik. Lütfen SMTP_HOST, SMTP_USER ve SMTP_PASS değerlerini kontrol edin." 
+        });
+      }
+
+      await sendEmailToCouriers(testOrder);
+      res.json({ success: true, message: "Test e-postası kuryelere gönderilmek üzere sıraya alındı." });
+    } catch (error) {
+      res.status(500).json({ error: "E-posta gönderimi sırasında bir hata oluştu: " + (error instanceof Error ? error.message : String(error)) });
+    }
+  });
+
   app.post("/api/admin/notify", (req, res) => {
     const { message, targetRole } = req.body;
     const payload = JSON.stringify({
