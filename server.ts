@@ -230,6 +230,11 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Health check endpoint for Render
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
   // WebSocket connection handling
   const clients = new Map<WebSocket, { courierId?: string, role?: string }>();
 
