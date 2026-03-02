@@ -324,52 +324,6 @@ async function startServer() {
     res.json({ onlineCouriers, webhookConfigured });
   });
 
-  app.post("/api/admin/test-whatsapp", async (req, res) => {
-    try {
-      const testOrder = {
-        id: "TEST-" + Math.floor(Math.random() * 1000),
-        customer_name: "Test Kullanıcısı",
-        pickup_address: "Antalya Merkez",
-        delivery_address: "Konyaaltı Sahil",
-        vehicle_type: "motorcycle",
-        distance: 5.4,
-        package_type: "Test Paketi",
-        payment_method: "sender"
-      };
-      const result = await sendWhatsAppNotification(testOrder);
-      if (result.success) {
-        res.json({ success: true, message: "Test bildirimi başarıyla gönderildi! Lütfen Zapier/Make ekranını kontrol edin." });
-      } else {
-        res.status(400).json({ success: false, error: result.error });
-      }
-    } catch (error) {
-      res.status(500).json({ error: "Sunucu tarafında bir hata oluştu: " + (error instanceof Error ? error.message : String(error)) });
-    }
-  });
-
-  app.post("/api/admin/test-email", async (req, res) => {
-    try {
-      const testOrder = {
-        id: "TEST-EMAIL",
-        pickup_address: "Antalya Merkez",
-        delivery_address: "Konyaaltı Sahil",
-        vehicle_type: "motorcycle"
-      };
-      
-      if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        return res.status(400).json({ 
-          success: false, 
-          error: "SMTP ayarları eksik. Lütfen SMTP_HOST, SMTP_USER ve SMTP_PASS değerlerini kontrol edin." 
-        });
-      }
-
-      await sendEmailToCouriers(testOrder);
-      res.json({ success: true, message: "Test e-postası kuryelere gönderilmek üzere sıraya alındı." });
-    } catch (error) {
-      res.status(500).json({ error: "E-posta gönderimi sırasında bir hata oluştu: " + (error instanceof Error ? error.message : String(error)) });
-    }
-  });
-
   app.post("/api/admin/notify", (req, res) => {
     const { message, targetRole } = req.body;
     const payload = JSON.stringify({

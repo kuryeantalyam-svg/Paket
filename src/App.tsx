@@ -56,6 +56,22 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 const ANTALYA_COORDS: [number, number] = [36.8841, 30.7056];
 
+const getPackageLabel = (type: string) => {
+  const labels: Record<string, string> = {
+    'dosya': 'Dosya / Evrak',
+    'paket': 'Küçük Paket',
+    'koli': 'Koli / Kutu',
+    'yedek_parca': 'Yedek Parça',
+    'tibbi': 'Tıbbi Malzeme',
+    'yemek': 'Yemek / Gıda',
+    'cicek': 'Çiçek / Hediye',
+    'ev_esyasi': 'Ev Eşyası',
+    'petshop': 'Petshop / Mama',
+    'diger': 'Diğer'
+  };
+  return labels[type] || type;
+};
+
 const getVehicleInfo = (type: VehicleType) => {
   switch (type) {
     case 'motorcycle': return { icon: Bike, label: 'Motosiklet' };
@@ -666,7 +682,7 @@ export default function App() {
   const [delivery, setDelivery] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [packageType, setPackageType] = useState('dosya');
+  const [packageType, setPackageType] = useState('Dosya / Evrak');
   const [specialRequest, setSpecialRequest] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'sender' | 'receiver'>('sender');
   const [showPriceModal, setShowPriceModal] = useState(false);
@@ -1287,99 +1303,6 @@ export default function App() {
                     </button>
                   </form>
                 </div>
-
-                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-emerald-50 p-4 rounded-2xl">
-                        <MessageCircle className="w-7 h-7 text-emerald-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold">WhatsApp Test</h3>
-                        <p className="text-sm text-slate-400">Bağlantıyı doğrula</p>
-                      </div>
-                    </div>
-                    <div className={cn(
-                      "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5",
-                      webhookConfigured ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"
-                    )}>
-                      <div className={cn("w-1.5 h-1.5 rounded-full", webhookConfigured ? "bg-emerald-500" : "bg-rose-500")}></div>
-                      {webhookConfigured ? "Bağlı" : "Bağlı Değil"}
-                    </div>
-                  </div>
-                  
-                  {!webhookConfigured && (
-                    <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs leading-relaxed">
-                      <p className="font-bold mb-1">⚠️ Webhook URL Eksik!</p>
-                      <p>Secrets panelinden <b>WHATSAPP_WEBHOOK_URL</b> anahtarını tanımlamanız gerekiyor.</p>
-                    </div>
-                  )}
-
-                  <button 
-                    onClick={async () => {
-                      try {
-                        const res = await fetch('/api/admin/test-whatsapp', { method: 'POST' });
-                        const data = await res.json();
-                        if (data.success) {
-                          alert(data.message);
-                        } else {
-                          alert(`Hata: ${data.error || 'Bilinmeyen bir hata oluştu.'}`);
-                        }
-                      } catch (e) {
-                        alert('Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.');
-                      }
-                    }}
-                    className={cn(
-                      "w-full font-bold py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2",
-                      webhookConfigured 
-                        ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-100" 
-                        : "bg-slate-200 text-slate-400 cursor-not-allowed"
-                    )}
-                    disabled={!webhookConfigured}
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    Bağlantıyı Test Et
-                  </button>
-                  <p className="text-[10px] text-slate-400 mt-4 leading-relaxed italic">
-                    * Bu buton Zapier/Make'e test verisi gönderir. Eğer "Bağlı Değil" yazıyorsa önce Secrets panelini kontrol edin.
-                  </p>
-                </div>
-                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-indigo-50 p-4 rounded-2xl">
-                        <Mail className="w-7 h-7 text-indigo-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold">E-posta Testi</h3>
-                        <p className="text-sm text-slate-400">Kurye bildirimlerini test et</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <button 
-                    onClick={async () => {
-                      try {
-                        const res = await fetch('/api/admin/test-email', { method: 'POST' });
-                        const data = await res.json();
-                        if (data.success) {
-                          alert(data.message);
-                        } else {
-                          alert(`Hata: ${data.error || 'SMTP ayarlarını kontrol edin.'}`);
-                        }
-                      } catch (e) {
-                        alert('Sunucuya bağlanılamadı.');
-                      }
-                    }}
-                    className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Send className="w-5 h-5" />
-                    Kuryelere Test Maili Gönder
-                  </button>
-                  <p className="text-[10px] text-slate-400 mt-4 leading-relaxed italic">
-                    * Bu işlem sistemdeki tüm kayıtlı kuryelere bir test e-postası gönderir.
-                  </p>
-                </div>
               </div>
 
               <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
@@ -1668,12 +1591,16 @@ export default function App() {
                                 onChange={e => setPackageType(e.target.value)}
                                 className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none"
                               >
-                                <option value="dosya">Dosya / Evrak</option>
-                                <option value="paket">Küçük Paket</option>
-                                <option value="koli">Koli / Kutu</option>
-                                <option value="yedek_parca">Yedek Parça</option>
-                                <option value="tibbi">Tıbbi Malzeme</option>
-                                <option value="diger">Diğer</option>
+                                <option value="Dosya / Evrak">Dosya / Evrak</option>
+                                <option value="Küçük Paket">Küçük Paket</option>
+                                <option value="Koli / Kutu">Koli / Kutu</option>
+                                <option value="Yemek / Gıda">Yemek / Gıda</option>
+                                <option value="Çiçek / Hediye">Çiçek / Hediye</option>
+                                <option value="Ev Eşyası">Ev Eşyası</option>
+                                <option value="Petshop / Mama">Petshop / Mama</option>
+                                <option value="Yedek Parça">Yedek Parça</option>
+                                <option value="Tıbbi Malzeme">Tıbbi Malzeme</option>
+                                <option value="Diğer">Diğer</option>
                               </select>
                             </div>
                             <div>
@@ -1994,7 +1921,7 @@ export default function App() {
                                   )}
                                   {order.package_type && (
                                     <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold uppercase rounded-md border border-slate-200">
-                                      {order.package_type}
+                                      {getPackageLabel(order.package_type)}
                                     </span>
                                   )}
                                   {order.payment_method && (
@@ -2099,7 +2026,7 @@ export default function App() {
                                 )}
                                 {order.package_type && (
                                   <span className="px-2 py-0.5 bg-white/10 text-white text-[9px] font-bold uppercase rounded-md border border-white/20">
-                                    {order.package_type}
+                                    {getPackageLabel(order.package_type)}
                                   </span>
                                 )}
                                 <span className="px-2 py-0.5 bg-white/20 text-white text-[9px] font-bold uppercase rounded-md border border-white/30">
@@ -2344,7 +2271,7 @@ export default function App() {
                     {getVehicleInfo(vehicleType).label}
                   </div>
                   <div className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-bold uppercase rounded-md">
-                    {packageType}
+                    {getPackageLabel(packageType)}
                   </div>
                 </div>
               </div>
