@@ -819,9 +819,6 @@ export default function App() {
   const watchIdRef = useRef<number | null>(null);
 
   const [logoClicks, setLogoClicks] = useState(0);
-  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
-  const [adminPasswordInput, setAdminPasswordInput] = useState('');
-  const [adminPasswordError, setAdminPasswordError] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean;
     title: string;
@@ -1308,8 +1305,6 @@ export default function App() {
                   setUser(null);
                   setActiveOrder(null);
                   setCourierLocation(null);
-                  setIsAdminUnlocked(false);
-                  setAdminPasswordInput('');
                 }}
                 className="ml-2 p-1 text-slate-400 hover:text-rose-500 transition-colors"
                 title="Çıkış Yap"
@@ -1356,60 +1351,8 @@ export default function App() {
 
 
         {role === 'admin' && (
-          !isAdminUnlocked ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-slate-200 w-full max-w-sm text-center"
-              >
-                <div className="bg-indigo-600 p-4 rounded-2xl mb-4 shadow-lg shadow-indigo-200 inline-block">
-                  <ShieldCheck className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-xl font-bold mb-2">Yönetici Girişi</h2>
-                <p className="text-slate-500 text-sm mb-6">Lütfen yönetici şifresini giriniz.</p>
-                <input 
-                  type="password"
-                  value={adminPasswordInput}
-                  onChange={(e) => {
-                    setAdminPasswordInput(e.target.value);
-                    setAdminPasswordError(false);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      if (adminPasswordInput === '88') {
-                        setIsAdminUnlocked(true);
-                      } else {
-                        setAdminPasswordError(true);
-                      }
-                    }
-                  }}
-                  className={cn(
-                    "w-full px-5 py-4 bg-slate-50 border rounded-2xl text-center text-2xl tracking-[1em] font-black focus:outline-none focus:ring-2 transition-all",
-                    adminPasswordError ? "border-rose-500 ring-rose-500/20" : "border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  )}
-                  placeholder="••"
-                  maxLength={2}
-                  autoFocus
-                />
-                {adminPasswordError && <p className="text-rose-500 text-xs font-bold mt-2">Hatalı şifre!</p>}
-                <button 
-                  onClick={() => {
-                    if (adminPasswordInput === '88') {
-                      setIsAdminUnlocked(true);
-                    } else {
-                      setAdminPasswordError(true);
-                    }
-                  }}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all mt-6"
-                >
-                  Giriş Yap
-                </button>
-              </motion.div>
-            </div>
-          ) : (
-            <div className="space-y-8">
-              <div className="flex justify-between items-center">
+          <div className="space-y-8">
+            <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-3xl font-bold">Yönetici Paneli</h2>
                 <p className="text-slate-500 text-sm mt-1">Sistem genelindeki tüm hareketleri izleyin.</p>
@@ -1655,8 +1598,9 @@ export default function App() {
                   </button>
                 </div>
               </div>
-            )
-          )}
+            </div>
+          </div>
+        )}
 
         {role === 'customer' && (
           <div className="space-y-8">
@@ -2046,7 +1990,8 @@ export default function App() {
                           <LeafletMapComponent location={courierLocation} status={activeOrder.status} />
                         </div>
                       )}
-                    </motion.div>
+                    </div>
+                  </motion.div>
                 )}
               </div>
             ) : (
