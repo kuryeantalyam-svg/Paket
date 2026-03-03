@@ -269,9 +269,42 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
     type: 'terms'
   });
 
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
   useEffect(() => {
     setRole(expectedRole);
   }, [expectedRole]);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotPasswordLoading(true);
+    setForgotPasswordMessage(null);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotPasswordEmail })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setForgotPasswordMessage({ type: 'success', text: data.message });
+        setTimeout(() => {
+          setShowForgotPasswordModal(false);
+          setForgotPasswordMessage(null);
+          setForgotPasswordEmail('');
+        }, 3000);
+      } else {
+        setForgotPasswordMessage({ type: 'error', text: data.error });
+      }
+    } catch (err) {
+      setForgotPasswordMessage({ type: 'error', text: 'Sunucuya bağlanılamadı' });
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -387,6 +420,17 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                     placeholder="••••••••"
                   />
+                  {isLogin && (
+                    <div className="flex justify-end mt-2">
+                      <button 
+                        type="button"
+                        onClick={() => setShowForgotPasswordModal(true)}
+                        className="text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+                      >
+                        Şifremi Unuttum
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -488,6 +532,72 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
               </div>
             </motion.div>
           </div>
+
+          <AnimatePresence>
+            {showForgotPasswordModal && (
+              <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl border border-slate-100"
+                >
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 mx-auto mb-4">
+                      <Mail className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-xl font-bold">Şifremi Unuttum</h3>
+                    <p className="text-slate-500 text-sm">E-posta adresinizi girin, size bir sıfırlama bağlantısı gönderelim.</p>
+                  </div>
+
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">E-posta</label>
+                      <input 
+                        type="email" 
+                        required
+                        value={forgotPasswordEmail}
+                        onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                        placeholder="ornek@mail.com"
+                      />
+                    </div>
+
+                    {forgotPasswordMessage && (
+                      <p className={cn(
+                        "text-xs font-bold text-center p-3 rounded-xl",
+                        forgotPasswordMessage.type === 'success' ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                      )}>
+                        {forgotPasswordMessage.text}
+                      </p>
+                    )}
+
+                    <div className="flex flex-col gap-3">
+                      <button 
+                        type="submit"
+                        disabled={forgotPasswordLoading}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
+                      >
+                        {forgotPasswordLoading ? (
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : 'Bağlantı Gönder'}
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setShowForgotPasswordModal(false);
+                          setForgotPasswordMessage(null);
+                        }}
+                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-4 rounded-2xl transition-all"
+                      >
+                        Vazgeç
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
           {/* Marketing Content (Services Grid) */}
           <motion.div 
@@ -686,6 +796,7 @@ export default function App() {
   const [specialRequest, setSpecialRequest] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'sender' | 'receiver'>('sender');
   const [showPriceModal, setShowPriceModal] = useState(false);
+  const [currentDistance, setCurrentDistance] = useState<number>(0);
   const [vehicleType, setVehicleType] = useState<VehicleType>('motorcycle');
   const [showMap, setShowMap] = useState(true);
   const [showCallModal, setShowCallModal] = useState(false);
@@ -946,17 +1057,30 @@ export default function App() {
     }
   }, [activeOrder?.id, activeOrder?.courier_id, activeOrder?.customer_id, role]);
 
-  const getPrice = (type: VehicleType) => {
-    switch (type) {
-      case 'motorcycle': return 100;
-      case 'car': return 300;
-      case 'van': return 500;
-      default: return 0;
+  const getPrice = (type: VehicleType, pkgType: string, dist: number) => {
+    let basePrice = 0;
+    if (type === 'motorcycle') {
+      const cheapTypes = ['Dosya / Evrak', 'Yemek / Gıda', 'Küçük Paket', 'Tıbbi Malzeme'];
+      basePrice = cheapTypes.includes(pkgType) ? 100 : 120;
+    } else if (type === 'car') {
+      basePrice = 300;
+    } else if (type === 'van') {
+      basePrice = 500;
+    } else {
+      return 0;
     }
+    
+    if (dist > 8) {
+      basePrice = basePrice * 1.2;
+    }
+    
+    return Math.round(basePrice);
   };
 
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    const mockDistance = parseFloat((Math.random() * (12 - 1.5) + 1.5).toFixed(1));
+    setCurrentDistance(mockDistance);
     setShowPriceModal(true);
   };
 
@@ -964,8 +1088,8 @@ export default function App() {
     setShowPriceModal(false);
     setIsCreatingOrder(true);
     try {
-      // Generate a mock distance between 1.5 and 12.0 km
-      const mockDistance = parseFloat((Math.random() * (12 - 1.5) + 1.5).toFixed(1));
+      // Use the distance generated when showing the price modal
+      const mockDistance = currentDistance;
 
       // Geocode addresses
       const pickupCoords = await geocode(pickup);
@@ -1403,36 +1527,23 @@ export default function App() {
                   Kuryeler
                 </h3>
                 <div className="space-y-3">
-                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                        <User className="w-5 h-5" />
+                  {allCourierLocations.length > 0 ? (
+                    allCourierLocations.map((loc, idx) => (
+                      <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                            <User className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold">{loc.courier_id}</p>
+                            <p className="text-[10px] text-emerald-500 font-bold uppercase">Aktif</p>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-bold">Caner T.</p>
-                        <p className="text-[10px] text-emerald-500 font-bold uppercase">Aktif</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-bold text-slate-400">Puan</p>
-                      <p className="text-sm font-bold">4.8 ★</p>
-                    </div>
-                  </div>
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 opacity-60 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-slate-200 rounded-xl flex items-center justify-center text-slate-400">
-                        <User className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold">Ahmet K.</p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase">Çevrimdışı</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-bold text-slate-400">Puan</p>
-                      <p className="text-sm font-bold">4.5 ★</p>
-                    </div>
-                  </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-400 text-center py-4 italic">Aktif kurye bulunmuyor.</p>
+                  )}
                 </div>
 
                 <div className="bg-indigo-600 p-6 rounded-3xl text-white shadow-lg shadow-indigo-100">
@@ -1942,7 +2053,7 @@ export default function App() {
                                 )}
                               </div>
                             </div>
-                            <span className="text-2xl font-black text-indigo-600 self-start sm:self-auto">₺{getPrice(order.vehicle_type)}</span>
+                            <span className="text-2xl font-black text-indigo-600 self-start sm:self-auto">₺{getPrice(order.vehicle_type, order.package_type || 'Diğer', order.distance || 0)}</span>
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-2xl relative overflow-hidden">
@@ -2030,7 +2141,7 @@ export default function App() {
                                   </span>
                                 )}
                                 <span className="px-2 py-0.5 bg-white/20 text-white text-[9px] font-bold uppercase rounded-md border border-white/30">
-                                  ₺{getPrice(order.vehicle_type)}
+                                  ₺{getPrice(order.vehicle_type, order.package_type || 'Diğer', order.distance || 0)}
                                 </span>
                               </div>
                               {order.special_request && (
@@ -2263,9 +2374,13 @@ export default function App() {
               <div className="bg-slate-50 p-6 rounded-2xl mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-slate-500 text-sm">Hizmet Bedeli</span>
-                  <span className="text-xl font-black text-indigo-600">₺{getPrice(vehicleType)}</span>
+                  <span className="text-xl font-black text-indigo-600">₺{getPrice(vehicleType, packageType, currentDistance)}</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                    <Navigation className="w-3 h-3" />
+                    {currentDistance} km
+                  </div>
                   <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                     {React.createElement(getVehicleInfo(vehicleType).icon, { className: "w-3 h-3" })}
                     {getVehicleInfo(vehicleType).label}

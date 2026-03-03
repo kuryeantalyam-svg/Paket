@@ -312,6 +312,19 @@ async function startServer() {
     }
   });
 
+  app.post("/api/auth/forgot-password", (req, res) => {
+    const { email } = req.body;
+    const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+    
+    if (user) {
+      console.log(`Password reset email sent to: ${email}`);
+      // In a real app, you would send an actual email here.
+      res.json({ message: "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi." });
+    } else {
+      res.status(404).json({ error: "Bu e-posta adresi ile kayıtlı bir kullanıcı bulunamadı." });
+    }
+  });
+
   app.get("/api/admin/users", (req, res) => {
     const users = db.prepare("SELECT * FROM users ORDER BY created_at DESC").all();
     res.json(users);
