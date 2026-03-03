@@ -140,6 +140,19 @@ async function geocode(address: string) {
   return null;
 }
 
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return parseFloat(d.toFixed(1));
+}
+
 const CourierIcon = L.icon({
   iconUrl: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png',
   iconSize: [45, 45],
@@ -1058,30 +1071,58 @@ export default function App() {
   }, [activeOrder?.id, activeOrder?.courier_id, activeOrder?.customer_id, role]);
 
   const getPrice = (type: VehicleType, pkgType: string, dist: number) => {
-    let basePrice = 0;
     if (type === 'motorcycle') {
       const cheapTypes = ['Dosya / Evrak', 'Yemek / Gıda', 'Küçük Paket', 'Tıbbi Malzeme'];
-      basePrice = cheapTypes.includes(pkgType) ? 100 : 120;
+      let base = cheapTypes.includes(pkgType) ? 100 : 120;
+      if (dist > 8) base *= 1.2;
+      return Math.round(base);
     } else if (type === 'car') {
-      basePrice = 300;
+      // Base 300 + 10 TL per km after 5km
+      let base = 300;
+      if (dist > 5) {
+        base += (dist - 5) * 10;
+      }
+      return Math.round(base);
     } else if (type === 'van') {
-      basePrice = 500;
-    } else {
-      return 0;
+      // Base 500 + 10 TL per km after 5km
+      let base = 500;
+      if (dist > 5) {
+        base += (dist - 5) * 10;
+      }
+      return Math.round(base);
     }
-    
-    if (dist > 8) {
-      basePrice = basePrice * 1.2;
-    }
-    
-    return Math.round(basePrice);
+    return 0;
   };
 
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    const mockDistance = parseFloat((Math.random() * (12 - 1.5) + 1.5).toFixed(1));
-    setCurrentDistance(mockDistance);
-    setShowPriceModal(true);
+    setIsCreatingOrder(true);
+    try {
+      const pCoords = await geocode(pickup);
+      const dCoords = await geocode(delivery);
+      
+      let dist = 0;
+      if (pCoords && dCoords) {
+        dist = calculateDistance(pCoords.lat, pCoords.lng, dCoords.lat, dCoords.lng);
+        // Add road factor (approx 1.3x straight line)
+        dist = parseFloat((dist * 1.3).toFixed(1));
+        // Minimum distance 1.5km
+        if (dist < 1.5) dist = 1.5;
+      } else {
+        // Fallback to mock if geocoding fails
+        dist = parseFloat((Math.random() * (12 - 1.5) + 1.5).toFixed(1));
+      }
+      
+      setCurrentDistance(dist);
+      setShowPriceModal(true);
+    } catch (err) {
+      console.error("Order creation error:", err);
+      // Fallback
+      setCurrentDistance(parseFloat((Math.random() * (12 - 1.5) + 1.5).toFixed(1)));
+      setShowPriceModal(true);
+    } finally {
+      setIsCreatingOrder(false);
+    }
   };
 
   const handleConfirmOrder = async () => {
@@ -1091,7 +1132,7 @@ export default function App() {
       // Use the distance generated when showing the price modal
       const mockDistance = currentDistance;
 
-      // Geocode addresses
+      // Geocode addresses (already done in handleCreateOrder, but we need them again or we could store them)
       const pickupCoords = await geocode(pickup);
       const deliveryCoords = await geocode(delivery);
 
