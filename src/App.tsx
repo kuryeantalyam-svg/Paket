@@ -118,6 +118,16 @@ interface UserAccount {
   phone?: string;
 }
 
+interface SavedAddress {
+  id: string;
+  user_id: string;
+  title: string;
+  address: string;
+  lat: number;
+  lng: number;
+  created_at: string;
+}
+
 type AppRole = 'customer' | 'courier' | 'admin';
 
 function MapController({ center }: { center: [number, number] }) {
@@ -830,8 +840,9 @@ export default function App() {
     const saved = localStorage.getItem('smartpack_user');
     return saved ? JSON.parse(saved).role : 'customer';
   });
-  const [view, setView] = useState<'active' | 'history'>('active');
+  const [view, setView] = useState<'active' | 'history' | 'addresses'>('active');
   const [orders, setOrders] = useState<Order[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [onlineCouriers, setOnlineCouriers] = useState(0);
   const [webhookConfigured, setWebhookConfigured] = useState(false);
@@ -882,7 +893,90 @@ export default function App() {
   const [activeCourier, setActiveCourier] = useState<UserAccount | null>(null);
   const [activeCustomer, setActiveCustomer] = useState<UserAccount | null>(null);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [showSavedAddressesModal, setShowSavedAddressesModal] = useState<{ show: boolean, target: 'pickup' | 'delivery' }>({ show: false, target: 'pickup' });
+  const [saveAddressChecked, setSaveAddressChecked] = useState({ pickup: false, delivery: false });
+  const [addressTitle, setAddressTitle] = useState({ pickup: '', delivery: '' });
   const watchIdRef = useRef<number | null>(null);
+
+  const SavedAddressesModal = () => {
+    if (!showSavedAddressesModal.show) return null;
+
+    return (
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-6">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden"
+        >
+          <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">Kayıtlı Adreslerim</h3>
+              <p className="text-xs text-slate-500 mt-1">Lütfen bir adres seçin</p>
+            </div>
+            <button 
+              onClick={() => setShowSavedAddressesModal({ show: false, target: 'pickup' })}
+              className="p-3 hover:bg-white rounded-2xl transition-colors text-slate-400 hover:text-slate-600 shadow-sm"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-8 max-h-[60vh] overflow-y-auto space-y-4">
+            {savedAddresses.length > 0 ? (
+              savedAddresses.map((addr) => (
+                <div 
+                  key={addr.id}
+                  className="group relative bg-white border border-slate-200 p-5 rounded-2xl hover:border-indigo-600 hover:shadow-md transition-all cursor-pointer"
+                  onClick={() => {
+                    if (showSavedAddressesModal.target === 'pickup') {
+                      setPickup(addr.address);
+                    } else {
+                      setDelivery(addr.address);
+                    }
+                    setShowSavedAddressesModal({ show: false, target: 'pickup' });
+                  }}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 pr-8">
+                      <p className="font-bold text-slate-900">{addr.title}</p>
+                      <p className="text-sm text-slate-500 mt-1 line-clamp-2">{addr.address}</p>
+                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteSavedAddress(addr.id);
+                      }}
+                      className="absolute right-4 top-4 p-2 text-slate-300 hover:text-rose-500 transition-colors"
+                      title="Sil"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MapPin className="w-8 h-8 text-slate-300" />
+                </div>
+                <p className="text-slate-400 text-sm italic">Henüz kayıtlı bir adresiniz bulunmuyor.</p>
+              </div>
+            )}
+          </div>
+          <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex justify-end">
+            <button 
+              onClick={() => setShowSavedAddressesModal({ show: false, target: 'pickup' })}
+              className="px-8 py-3 bg-white text-slate-600 font-bold rounded-2xl border border-slate-200 hover:bg-slate-50 transition-all"
+            >
+              Kapat
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
 
   const [logoClicks, setLogoClicks] = useState(0);
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
@@ -1073,6 +1167,51 @@ export default function App() {
     };
   }, [role, user?.id]);
 
+  const fetchSavedAddresses = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/saved-addresses/${userId}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setSavedAddresses(data);
+      }
+    } catch (e) {
+      console.error("Fetch saved addresses error:", e);
+    }
+  };
+
+  const saveAddress = async (title: string, address: string, lat: number, lng: number) => {
+    if (!user) return;
+    try {
+      const res = await fetch('/api/saved-addresses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, title, address, lat, lng })
+      });
+      if (res.ok) {
+        fetchSavedAddresses(user.id);
+      }
+    } catch (e) {
+      console.error("Save address error:", e);
+    }
+  };
+
+  const deleteSavedAddress = async (id: string) => {
+    try {
+      const res = await fetch(`/api/saved-addresses/${id}`, { method: 'DELETE' });
+      if (res.ok && user) {
+        fetchSavedAddresses(user.id);
+      }
+    } catch (e) {
+      console.error("Delete address error:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchSavedAddresses(user.id);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (activeOrder?.courier_id) {
       fetch(`/api/courier-location/${activeOrder.courier_id}`)
@@ -1247,6 +1386,14 @@ export default function App() {
       if (!res.ok) throw new Error('Sipariş oluşturulamadı');
       
       const newOrder = await res.json();
+      
+      if (saveAddressChecked.pickup && pickup) {
+        saveAddress(addressTitle.pickup || 'Alış Adresi', pickup, pickupCoords?.lat || 0, pickupCoords?.lng || 0);
+      }
+      if (saveAddressChecked.delivery && delivery) {
+        saveAddress(addressTitle.delivery || 'Teslim Adresi', delivery, deliveryCoords?.lat || 0, deliveryCoords?.lng || 0);
+      }
+
       setOrders(prev => {
         if (prev.some(o => o.id === newOrder.id)) return prev;
         return [newOrder, ...prev];
@@ -1254,6 +1401,8 @@ export default function App() {
       setActiveOrder(newOrder);
       setPickup('');
       setDelivery('');
+      setSaveAddressChecked({ pickup: false, delivery: false });
+      setAddressTitle({ pickup: '', delivery: '' });
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Bir hata oluştu');
     } finally {
@@ -1432,6 +1581,18 @@ export default function App() {
             Sipariş Geçmişi
             {view === 'history' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
           </button>
+          {role === 'customer' && (
+            <button 
+              onClick={() => setView('addresses')}
+              className={cn(
+                "pb-4 px-2 text-sm font-bold transition-all relative",
+                view === 'addresses' ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              Adreslerim
+              {view === 'addresses' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
+            </button>
+          )}
         </div>
 
 
@@ -1819,7 +1980,19 @@ export default function App() {
                           </div>
 
                           <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Alış Adresi</label>
+                            <div className="flex items-center justify-between mb-2 ml-1">
+                              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Alış Adresi</label>
+                              {savedAddresses.length > 0 && (
+                                <button 
+                                  type="button"
+                                  onClick={() => setShowSavedAddressesModal({ show: true, target: 'pickup' })}
+                                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider flex items-center gap-1"
+                                >
+                                  <History className="w-3 h-3" />
+                                  Kayıtlı Adreslerim
+                                </button>
+                              )}
+                            </div>
                             <div className="relative">
                               <MapPin className="absolute left-4 top-4 w-5 h-5 text-emerald-500" />
                               <textarea 
@@ -1831,10 +2004,41 @@ export default function App() {
                                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
                               />
                             </div>
+                            <div className="mt-2 flex items-center gap-2 px-1">
+                              <input 
+                                type="checkbox" 
+                                id="savePickup"
+                                checked={saveAddressChecked.pickup}
+                                onChange={e => setSaveAddressChecked(prev => ({ ...prev, pickup: e.target.checked }))}
+                                className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              <label htmlFor="savePickup" className="text-xs text-slate-500 cursor-pointer">Bu adresi kaydet</label>
+                              {saveAddressChecked.pickup && (
+                                <input 
+                                  type="text"
+                                  placeholder="Adres Başlığı (Örn: Ev, Ofis)"
+                                  value={addressTitle.pickup}
+                                  onChange={e => setAddressTitle(prev => ({ ...prev, pickup: e.target.value }))}
+                                  className="flex-1 ml-2 px-3 py-1 text-xs bg-white border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-indigo-500"
+                                />
+                              )}
+                            </div>
                           </div>
 
                           <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Teslim Adresi</label>
+                            <div className="flex items-center justify-between mb-2 ml-1">
+                              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Teslim Adresi</label>
+                              {savedAddresses.length > 0 && (
+                                <button 
+                                  type="button"
+                                  onClick={() => setShowSavedAddressesModal({ show: true, target: 'delivery' })}
+                                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider flex items-center gap-1"
+                                >
+                                  <History className="w-3 h-3" />
+                                  Kayıtlı Adreslerim
+                                </button>
+                              )}
+                            </div>
                             <div className="relative">
                               <MapPinned className="absolute left-4 top-4 w-5 h-5 text-rose-500" />
                               <textarea 
@@ -1845,6 +2049,25 @@ export default function App() {
                                 placeholder="Paketin teslim edileceği tam adresi giriniz..."
                                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
                               />
+                            </div>
+                            <div className="mt-2 flex items-center gap-2 px-1">
+                              <input 
+                                type="checkbox" 
+                                id="saveDelivery"
+                                checked={saveAddressChecked.delivery}
+                                onChange={e => setSaveAddressChecked(prev => ({ ...prev, delivery: e.target.checked }))}
+                                className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              <label htmlFor="saveDelivery" className="text-xs text-slate-500 cursor-pointer">Bu adresi kaydet</label>
+                              {saveAddressChecked.delivery && (
+                                <input 
+                                  type="text"
+                                  placeholder="Adres Başlığı (Örn: Ev, Ofis)"
+                                  value={addressTitle.delivery}
+                                  onChange={e => setAddressTitle(prev => ({ ...prev, delivery: e.target.value }))}
+                                  className="flex-1 ml-2 px-3 py-1 text-xs bg-white border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-indigo-500"
+                                />
+                              )}
                             </div>
                           </div>
                           <div>
@@ -2135,7 +2358,7 @@ export default function App() {
                   </motion.div>
                 )}
               </div>
-            ) : (
+            ) : view === 'history' ? (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">Tamamlanan Teslimatlarınız</h2>
                 <div className="grid grid-cols-1 gap-4">
@@ -2169,7 +2392,47 @@ export default function App() {
                   )}
                 </div>
               </div>
-            )}
+            ) : view === 'addresses' ? (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold">Kayıtlı Adreslerim</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {savedAddresses.map(addr => (
+                    <div key={addr.id} className="bg-white p-6 rounded-3xl border border-slate-200 relative group">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
+                          <MapPin className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-slate-900">{addr.title}</p>
+                          <p className="text-sm text-slate-500 mt-1">{addr.address}</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => deleteSavedAddress(addr.id)}
+                        className="absolute top-4 right-4 p-2 text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Sil"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  {savedAddresses.length === 0 && (
+                    <div className="col-span-full text-center py-12 bg-white rounded-[2.5rem] border border-slate-200">
+                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <MapPin className="w-8 h-8 text-slate-300" />
+                      </div>
+                      <p className="text-slate-400 text-sm italic">Henüz kayıtlı bir adresiniz bulunmuyor.</p>
+                      <button 
+                        onClick={() => setView('active')}
+                        className="mt-4 text-indigo-600 font-bold text-sm hover:underline"
+                      >
+                        Yeni sipariş oluştururken adres kaydedebilirsiniz
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -2622,7 +2885,7 @@ export default function App() {
         )}
 
         {showCallModal && (
-          <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[4000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -2678,6 +2941,8 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+
+      <SavedAddressesModal />
     </div>
   );
 }

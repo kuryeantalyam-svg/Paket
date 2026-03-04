@@ -190,6 +190,17 @@ db.exec(`
     lng REAL,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS saved_addresses (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    title TEXT,
+    address TEXT,
+    lat REAL,
+    lng REAL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
 `);
 
 // Log database status
@@ -222,6 +233,22 @@ try {
   db.prepare("ALTER TABLE users ADD COLUMN phone TEXT").run();
 } catch (e) {}
 
+// Migration for saved_addresses (if needed)
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS saved_addresses (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      title TEXT,
+      address TEXT,
+      lat REAL,
+      lng REAL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    );
+  `);
+} catch (e) {}
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
@@ -233,6 +260,39 @@ async function startServer() {
   // Health check endpoint for Render
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Saved Addresses API
+  app.get("/api/saved-addresses/:userId", (req, res) => {
+    const { userId } = req.params;
+    try {
+      const addresses = db.prepare("SELECT * FROM saved_addresses WHERE user_id = ? ORDER BY created_at DESC").all(userId);
+      res.json(addresses);
+    } catch (error) {
+      res.status(500).json({ error: "Adresler yüklenirken bir hata oluştu" });
+    }
+  });
+
+  app.post("/api/saved-addresses", (req, res) => {
+    const { userId, title, address, lat, lng } = req.body;
+    const id = Math.random().toString(36).substring(7);
+    try {
+      db.prepare("INSERT INTO saved_addresses (id, user_id, title, address, lat, lng) VALUES (?, ?, ?, ?, ?, ?)")
+        .run(id, userId, title, address, lat, lng);
+      res.json({ id, userId, title, address, lat, lng });
+    } catch (error) {
+      res.status(500).json({ error: "Adres kaydedilirken bir hata oluştu" });
+    }
+  });
+
+  app.delete("/api/saved-addresses/:id", (req, res) => {
+    const { id } = req.params;
+    try {
+      db.prepare("DELETE FROM saved_addresses WHERE id = ?").run(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Adres silinirken bir hata oluştu" });
+    }
   });
 
   // WebSocket connection handling
