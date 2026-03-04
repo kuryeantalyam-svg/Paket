@@ -82,6 +82,87 @@ const getVehicleInfo = (type: VehicleType) => {
   }
 };
 
+const StickManAnimation = () => {
+  const [messageIndex, setMessageIndex] = useState(0);
+  const messages = [
+    "Bir yere dosya mı göndermek istiyorsun?",
+    "Veterinerden alınacak bir evcil hayvanın mı var?",
+    "Ev eşyası taşımak için panelvan araca mı ihtiyacın var?",
+    "İşletmene acil kurye mi lazım?",
+    "Formu doldur kuryen gelsin."
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % messages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [messages.length]);
+
+  return (
+    <div className="relative h-28 mb-[-16px] z-10 flex items-end justify-center pointer-events-none">
+      <div className="flex flex-col items-center">
+        {/* Speech Bubble */}
+        <div className="h-12 flex items-center justify-center mb-1">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={messageIndex}
+              initial={{ opacity: 0, scale: 0.8, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: -10 }}
+              className="bg-white px-4 py-2 rounded-2xl shadow-xl border border-indigo-100 text-xs font-bold text-indigo-600 relative whitespace-nowrap pointer-events-auto"
+            >
+              {messages[messageIndex]}
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white border-r border-b border-indigo-100 rotate-45"></div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Stick Man SVG (Sitting) */}
+        <motion.svg
+          width="50"
+          height="50"
+          viewBox="0 0 40 40"
+          className="text-indigo-500 drop-shadow-sm"
+          animate={{
+            y: [0, -1, 0],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        >
+          {/* Head */}
+          <circle cx="20" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2.5" />
+          {/* Body */}
+          <line x1="20" y1="14" x2="20" y2="28" stroke="currentColor" strokeWidth="2.5" />
+          {/* Arms */}
+          <motion.line 
+            x1="20" y1="20" x2="10" y2="15" 
+            stroke="currentColor" strokeWidth="2.5"
+            strokeLinecap="round"
+            animate={{ rotate: [0, 15, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+          <motion.line 
+            x1="20" y1="20" x2="30" y2="15" 
+            stroke="currentColor" strokeWidth="2.5"
+            strokeLinecap="round"
+            animate={{ rotate: [0, -15, 0] }}
+            transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+          />
+          {/* Legs (Sitting) */}
+          <line x1="20" y1="28" x2="12" y2="35" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="12" y1="35" x2="4" y2="35" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="20" y1="28" x2="28" y2="35" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="28" y1="35" x2="36" y2="35" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+        </motion.svg>
+      </div>
+    </div>
+  );
+};
+
 type VehicleType = 'motorcycle' | 'car' | 'van';
 type OrderStatus = 'pending' | 'accepted' | 'picked_up' | 'delivered' | 'cancelled';
 
@@ -1937,11 +2018,13 @@ export default function App() {
 
                 {!activeOrder ? (
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                    <motion.div 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="lg:col-span-2 bg-white p-8 md:p-12 rounded-[2.5rem] shadow-sm border border-slate-200"
-                    >
+                    <div className="lg:col-span-2 relative">
+                      <StickManAnimation />
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-sm border border-slate-200"
+                      >
                       <div className="max-w-2xl mx-auto">
                         <div className="text-center mb-10">
                           <h2 className="text-3xl font-bold mb-3">Paket Gönder</h2>
@@ -2154,8 +2237,9 @@ export default function App() {
                       </form>
                     </div>
                   </motion.div>
+                </div>
 
-                  {/* Services Sidebar for Logged-in Customers */}
+                {/* Services Sidebar for Logged-in Customers */}
                   <div className="space-y-6">
                     <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100">
                       <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4">
