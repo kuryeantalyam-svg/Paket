@@ -33,7 +33,8 @@ import {
   Flower2,
   Dog,
   Mail,
-  Send
+  Send,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
@@ -381,6 +382,53 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user:
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          {/* SEO Content Section */}
+          <div className="hidden lg:block space-y-8">
+            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/20">
+              <h2 className="text-2xl font-bold text-slate-900 mb-6">Antalya'nın Her Yerine Güvenli Teslimat</h2>
+              <div className="space-y-6">
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 shrink-0">
+                    <Zap className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900">Antalya Paket Gönder</h3>
+                    <p className="text-sm text-slate-500 mt-1">Antalya içinde paketlerinizi dakikalar içinde alıyor ve hedef adrese en hızlı şekilde ulaştırıyoruz.</p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shrink-0">
+                    <Phone className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900">Antalya Kurye Çağır</h3>
+                    <p className="text-sm text-slate-500 mt-1">Uygulamamız üzerinden tek tıkla kurye çağırın, gönderinizi kapınızdan teslim alalım.</p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 shrink-0">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900">Güvenilir Moto Kurye</h3>
+                    <p className="text-sm text-slate-500 mt-1">Profesyonel kurye ağımız ile evrak, paket ve değerli eşyalarınız Antalya trafiğine takılmadan güvende.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-indigo-600 p-6 rounded-3xl text-white">
+                <p className="text-3xl font-black">30dk</p>
+                <p className="text-xs font-bold uppercase tracking-wider opacity-80">Ortalama Teslimat</p>
+              </div>
+              <div className="bg-slate-900 p-6 rounded-3xl text-white">
+                <p className="text-3xl font-black">7/24</p>
+                <p className="text-xs font-bold uppercase tracking-wider opacity-80">Kesintisiz Hizmet</p>
+              </div>
+            </div>
+          </div>
+
           {/* Auth Form */}
           <div className="flex justify-center">
             <motion.div 
