@@ -284,6 +284,16 @@ async function startServer() {
   }
 
   // API Routes
+  const adminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const password = req.headers['x-admin-password'];
+    const expectedPassword = process.env.ADMIN_PASSWORD || '1234';
+    if (password === expectedPassword) {
+      next();
+    } else {
+      res.status(403).json({ error: "Unauthorized admin access" });
+    }
+  };
+
   app.post("/api/auth/register", (req, res) => {
     const { email, password, role, fullName, phone } = req.body;
     const id = Math.random().toString(36).substring(7);
@@ -325,19 +335,19 @@ async function startServer() {
     }
   });
 
-  app.get("/api/admin/users", (req, res) => {
+  app.get("/api/admin/users", adminAuth, (req, res) => {
     const users = db.prepare("SELECT * FROM users ORDER BY created_at DESC").all();
     res.json(users);
   });
 
-  app.get("/api/admin/stats", (req, res) => {
+  app.get("/api/admin/stats", adminAuth, (req, res) => {
     const onlineCouriers = Array.from(clients.values())
       .filter(c => c.role === 'courier').length;
     const webhookConfigured = !!process.env.WHATSAPP_WEBHOOK_URL;
     res.json({ onlineCouriers, webhookConfigured });
   });
 
-  app.post("/api/admin/notify", (req, res) => {
+  app.post("/api/admin/notify", adminAuth, (req, res) => {
     const { message, targetRole } = req.body;
     const payload = JSON.stringify({
       type: 'notification',

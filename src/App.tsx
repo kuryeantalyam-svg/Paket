@@ -268,7 +268,7 @@ function LeafletMapComponent({
   );
 }
 
-function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) => void, expectedRole: AppRole }) {
+function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user: UserAccount) => void, expectedRole: AppRole, onAdminTrigger: () => void }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -287,9 +287,22 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const [forgotPasswordMessage, setForgotPasswordMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
+  const [adminClickCount, setAdminClickCount] = useState(0);
+
   useEffect(() => {
     setRole(expectedRole);
   }, [expectedRole]);
+
+  const handleHiddenClick = () => {
+    if (isLogin) {
+      const newCount = adminClickCount + 1;
+      setAdminClickCount(newCount);
+      if (newCount >= 5) {
+        onAdminTrigger();
+        setAdminClickCount(0);
+      }
+    }
+  };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -379,7 +392,12 @@ function AuthScreen({ onLogin, expectedRole }: { onLogin: (user: UserAccount) =>
                 <div className="bg-indigo-600 p-4 rounded-2xl mb-4 shadow-lg shadow-indigo-200">
                   <Package className="w-8 h-8 text-white" />
                 </div>
-                <h1 className="text-2xl font-bold tracking-tight">SmartPack</h1>
+                <h1 
+                  onClick={handleHiddenClick}
+                  className="text-2xl font-bold tracking-tight cursor-default select-none"
+                >
+                  SmartPack
+                </h1>
                 <p className="text-slate-500 text-sm mt-1">
                   {isLogin ? 'Hesabınıza giriş yapın' : 'Yeni hesap oluşturun'}
                 </p>
@@ -819,6 +837,9 @@ export default function App() {
   const watchIdRef = useRef<number | null>(null);
 
   const [logoClicks, setLogoClicks] = useState(0);
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [adminPasswordError, setAdminPasswordError] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean;
     title: string;
@@ -1016,9 +1037,10 @@ export default function App() {
 
   useEffect(() => {
     if (role === 'admin') {
-      fetch('/api/admin/users').then(res => res.json()).then(setUsers);
+      const adminHeaders = { 'x-admin-password': adminPasswordInput || '1234' };
+      fetch('/api/admin/users', { headers: adminHeaders }).then(res => res.json()).then(setUsers);
       const fetchStats = () => {
-        fetch('/api/admin/stats').then(res => res.json()).then(data => {
+        fetch('/api/admin/stats', { headers: adminHeaders }).then(res => res.json()).then(data => {
           setOnlineCouriers(data.onlineCouriers);
           setWebhookConfigured(data.webhookConfigured);
         });
@@ -1028,7 +1050,7 @@ export default function App() {
       const interval = setInterval(fetchStats, 5000);
       return () => clearInterval(interval);
     }
-  }, [role]);
+  }, [role, adminPasswordInput]);
 
   const playNotificationSound = () => {
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -1274,7 +1296,7 @@ export default function App() {
   };
 
   if (!user && role !== 'admin') {
-    return <AuthScreen expectedRole={role} onLogin={(u) => {
+    return <AuthScreen expectedRole={role} onAdminTrigger={() => setRole('admin')} onLogin={(u) => {
       setUser(u);
       setRole(u.role);
     }} />;
@@ -1305,6 +1327,8 @@ export default function App() {
                   setUser(null);
                   setActiveOrder(null);
                   setCourierLocation(null);
+                  setIsAdminUnlocked(false);
+                  setAdminPasswordInput('');
                 }}
                 className="ml-2 p-1 text-slate-400 hover:text-rose-500 transition-colors"
                 title="Çıkış Yap"
@@ -1314,11 +1338,24 @@ export default function App() {
             </div>
           )}
           {!user && role === 'admin' && (
-            <div className="flex bg-slate-100 p-1 rounded-xl">
+            <div className="flex items-center gap-2">
+              <div className="flex bg-slate-100 p-1 rounded-xl">
+                <button 
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-white shadow-sm text-indigo-600 transition-all"
+                >
+                  Admin
+                </button>
+              </div>
               <button 
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-white shadow-sm text-indigo-600 transition-all"
+                onClick={() => {
+                  setRole('customer');
+                  setIsAdminUnlocked(false);
+                  setAdminPasswordInput('');
+                }}
+                className="p-2 text-slate-400 hover:text-rose-500 transition-colors"
+                title="Geri Dön"
               >
-                Admin
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           )}
@@ -1351,8 +1388,60 @@ export default function App() {
 
 
         {role === 'admin' && (
-          <div className="space-y-8">
-            <div className="flex justify-between items-center">
+          !isAdminUnlocked ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-slate-200 w-full max-w-sm text-center"
+              >
+                <div className="bg-indigo-600 p-4 rounded-2xl mb-4 shadow-lg shadow-indigo-200 inline-block">
+                  <ShieldCheck className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-xl font-bold mb-2">Yönetici Girişi</h2>
+                <p className="text-slate-500 text-sm mb-6">Lütfen yönetici şifresini giriniz.</p>
+                <input 
+                  type="password"
+                  value={adminPasswordInput}
+                  onChange={(e) => {
+                    setAdminPasswordInput(e.target.value);
+                    setAdminPasswordError(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      if (adminPasswordInput === '1234') {
+                        setIsAdminUnlocked(true);
+                      } else {
+                        setAdminPasswordError(true);
+                      }
+                    }
+                  }}
+                  className={cn(
+                    "w-full px-5 py-4 bg-slate-50 border rounded-2xl text-center text-2xl tracking-[0.5em] font-black focus:outline-none focus:ring-2 transition-all",
+                    adminPasswordError ? "border-rose-500 ring-rose-500/20" : "border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  )}
+                  placeholder="••••"
+                  maxLength={4}
+                  autoFocus
+                />
+                {adminPasswordError && <p className="text-rose-500 text-xs font-bold mt-2">Hatalı şifre!</p>}
+                <button 
+                  onClick={() => {
+                    if (adminPasswordInput === '1234') {
+                      setIsAdminUnlocked(true);
+                    } else {
+                      setAdminPasswordError(true);
+                    }
+                  }}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all mt-6"
+                >
+                  Giriş Yap
+                </button>
+              </motion.div>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-3xl font-bold">Yönetici Paneli</h2>
                 <p className="text-slate-500 text-sm mt-1">Sistem genelindeki tüm hareketleri izleyin.</p>
@@ -1447,7 +1536,10 @@ export default function App() {
                     const message = (form.elements.namedItem('message') as HTMLTextAreaElement).value;
                     await fetch('/api/admin/notify', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+                      headers: { 
+                        'Content-Type': 'application/json',
+                        'x-admin-password': adminPasswordInput || '1234'
+                      },
                       body: JSON.stringify({ message, targetRole: 'courier' })
                     });
                     form.reset();
@@ -1600,7 +1692,8 @@ export default function App() {
               </div>
             </div>
           </div>
-        )}
+        )
+      )}
 
         {role === 'customer' && (
           <div className="space-y-8">
