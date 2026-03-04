@@ -97,68 +97,102 @@ const StickManAnimation = () => {
       setMessageIndex((prev) => (prev + 1) % messages.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, [messages.length]);
+  }, []);
 
   return (
-    <div className="relative h-28 mb-[-16px] z-10 flex items-end justify-center pointer-events-none">
-      <div className="flex flex-col items-center">
-        {/* Speech Bubble */}
-        <div className="h-12 flex items-center justify-center mb-1">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={messageIndex}
-              initial={{ opacity: 0, scale: 0.8, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: -10 }}
-              className="bg-white px-4 py-2 rounded-2xl shadow-xl border border-indigo-100 text-xs font-bold text-indigo-600 relative whitespace-nowrap pointer-events-auto"
-            >
-              {messages[messageIndex]}
-              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white border-r border-b border-indigo-100 rotate-45"></div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+    <div className="flex flex-col items-center w-full mb-[-20px] relative z-[100] pointer-events-none">
+      {/* Speech Bubble */}
+      <div className="h-16 flex items-center justify-center mb-2">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={messageIndex}
+            initial={{ opacity: 0, scale: 0.5, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.5, y: -20 }}
+            className="bg-indigo-600 px-6 py-3 rounded-2xl shadow-2xl text-white text-sm font-bold relative whitespace-nowrap pointer-events-auto border-2 border-white/20"
+          >
+            {messages[messageIndex]}
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-indigo-600 rotate-45 border-r-2 border-b-2 border-white/20"></div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
-        {/* Stick Man SVG (Sitting) */}
-        <motion.svg
-          width="50"
-          height="50"
+      {/* Blue Lined Stickman SVG */}
+      <motion.div
+        animate={{
+          y: [0, -4, 0],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="relative"
+      >
+        <svg
+          width="100"
+          height="100"
           viewBox="0 0 40 40"
-          className="text-indigo-500 drop-shadow-sm"
-          animate={{
-            y: [0, -1, 0],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
+          className="text-indigo-600 drop-shadow-2xl"
         >
           {/* Head */}
-          <circle cx="20" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2.5" />
+          <circle cx="20" cy="8" r="6" fill="white" stroke="currentColor" strokeWidth="2.5" />
+          
           {/* Body */}
-          <line x1="20" y1="14" x2="20" y2="28" stroke="currentColor" strokeWidth="2.5" />
-          {/* Arms */}
-          <motion.line 
-            x1="20" y1="20" x2="10" y2="15" 
-            stroke="currentColor" strokeWidth="2.5"
+          <line x1="20" y1="14" x2="20" y2="26" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          
+          {/* Arms - Waving */}
+          <motion.path 
+            d="M 20 18 L 12 22" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2.5" 
             strokeLinecap="round"
-            animate={{ rotate: [0, 15, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
+            animate={{ d: ["M 20 18 L 12 22", "M 20 18 L 8 16", "M 20 18 L 12 22"] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
           />
-          <motion.line 
-            x1="20" y1="20" x2="30" y2="15" 
-            stroke="currentColor" strokeWidth="2.5"
+          <motion.path 
+            d="M 20 18 L 28 22" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2.5" 
             strokeLinecap="round"
-            animate={{ rotate: [0, -15, 0] }}
-            transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+            animate={{ d: ["M 20 18 L 28 22", "M 20 18 L 32 16", "M 20 18 L 28 22"] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.75 }}
           />
-          {/* Legs (Sitting) */}
-          <line x1="20" y1="28" x2="12" y2="35" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-          <line x1="12" y1="35" x2="4" y2="35" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-          <line x1="20" y1="28" x2="28" y2="35" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-          <line x1="28" y1="35" x2="36" y2="35" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-        </motion.svg>
-      </div>
+          
+          {/* Legs - Sitting position */}
+          <path 
+            d="M 20 26 Q 20 34 12 34 L 4 34" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2.5" 
+            strokeLinecap="round" 
+          />
+          <path 
+            d="M 20 26 Q 20 34 28 34 L 36 34" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2.5" 
+            strokeLinecap="round" 
+          />
+          
+          {/* Eyes */}
+          <circle cx="18" cy="7" r="0.8" fill="currentColor" />
+          <circle cx="22" cy="7" r="0.8" fill="currentColor" />
+          
+          {/* Smile */}
+          <motion.path 
+            d="M 17 10 Q 20 12 23 10" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="1" 
+            strokeLinecap="round"
+            animate={{ d: ["M 17 10 Q 20 12 23 10", "M 17 10 Q 20 13 23 10", "M 17 10 Q 20 12 23 10"] }}
+            transition={{ duration: 0.5, repeat: Infinity }}
+          />
+        </svg>
+      </motion.div>
     </div>
   );
 };
@@ -522,11 +556,13 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user:
 
           {/* Auth Form */}
           <div className="flex justify-center">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100/50 border border-slate-200 w-full max-w-md"
-            >
+            <div className="w-full max-w-md relative overflow-visible">
+              <StickManAnimation />
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100/50 border border-slate-200 w-full"
+              >
               <div className="flex flex-col items-center mb-8">
                 <div className="bg-indigo-600 p-4 rounded-2xl mb-4 shadow-lg shadow-indigo-200">
                   <Package className="w-8 h-8 text-white" />
@@ -702,6 +738,7 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user:
               </div>
             </motion.div>
           </div>
+        </div>
 
           <AnimatePresence>
             {showForgotPasswordModal && (
@@ -2018,7 +2055,7 @@ export default function App() {
 
                 {!activeOrder ? (
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                    <div className="lg:col-span-2 relative">
+                    <div className="lg:col-span-2 relative overflow-visible">
                       <StickManAnimation />
                       <motion.div 
                         initial={{ opacity: 0, y: 20 }}
