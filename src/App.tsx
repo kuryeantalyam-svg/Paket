@@ -1343,6 +1343,13 @@ export default function App() {
         if (isAssignedCourier || (isPendingOrder && !currentOrder?.courier_id)) {
           setCourierLocation(data);
         }
+      } else if (data.type === 'courier_offline') {
+        if (role === 'admin') {
+          setAllCourierLocations(prev => prev.filter(l => l.courierId !== data.courierId));
+        }
+        if (courierLocation?.courierId === data.courierId) {
+          setCourierLocation(null);
+        }
       } else if (data.type === 'order_updated') {
         setOrders(prev => prev.map(o => o.id === data.orderId ? { ...o, status: data.status, courier_id: data.courierId } : o));
         

@@ -330,6 +330,13 @@ async function startServer() {
     });
 
     ws.on("close", () => {
+      const info = clients.get(ws);
+      if (info?.role === 'courier' && info.courierId) {
+        broadcast({
+          type: "courier_offline",
+          courierId: info.courierId
+        });
+      }
       clients.delete(ws);
     });
   });
@@ -501,7 +508,16 @@ async function startServer() {
   });
 
   app.get("/api/couriers", (req, res) => {
-    const couriers = db.prepare("SELECT * FROM courier_locations").all();
+    const onlineCourierIds = Array.from(clients.values())
+      .filter(c => c.role === 'courier' && c.courierId)
+      .map(c => c.courierId);
+    
+    if (onlineCourierIds.length === 0) {
+      return res.json([]);
+    }
+
+    const placeholders = onlineCourierIds.map(() => '?').join(',');
+    const couriers = db.prepare(`SELECT courier_id as courierId, lat, lng, updated_at FROM courier_locations WHERE courier_id IN (${placeholders})`).all(...onlineCourierIds);
     res.json(couriers);
   });
 
