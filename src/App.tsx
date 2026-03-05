@@ -886,6 +886,24 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user:
             animate={{ opacity: 1, x: 0 }}
             className="space-y-8"
           >
+            {/* Trust Statistics Section */}
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+                <p className="text-2xl font-black text-indigo-600">5000+</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Teslimat</p>
+              </div>
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+                <p className="text-2xl font-black text-indigo-600">600+</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kurye</p>
+              </div>
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+                <div className="flex justify-center mb-1">
+                  <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                </div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kurumsal Müşteriler</p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 { 
@@ -941,6 +959,22 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user:
                   </div>
                 </motion.div>
               ))}
+            </div>
+
+            {/* Service Areas Section */}
+            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="w-4 h-4 text-indigo-600" />
+                <h4 className="font-bold text-slate-900 text-sm">Hizmet Bölgelerimiz</h4>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {['Lara Kurye', 'Konyaaltı Kurye', 'Kepez Kurye', 'Muratpaşa Kurye', 'Döşemealtı Kurye'].map((area) => (
+                  <span key={area} className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 shadow-sm">
+                    {area}
+                  </span>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-4 italic">Antalya'nın her noktasına 30 dakikada teslimat garantisi.</p>
             </div>
           </motion.div>
         </div>
