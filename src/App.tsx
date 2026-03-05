@@ -37,7 +37,7 @@ import {
   Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { cn } from './lib/utils';
@@ -245,11 +245,15 @@ interface SavedAddress {
 
 type AppRole = 'customer' | 'courier' | 'admin';
 
-function MapController({ center }: { center: [number, number] }) {
+function MapController({ center, zoom }: { center: [number, number], zoom?: number }) {
   const map = useMap();
   useEffect(() => {
-    map.panTo(center, { animate: true, duration: 1.5 });
-  }, [center, map]);
+    if (zoom) {
+      map.setView(center, zoom);
+    } else {
+      map.panTo(center, { animate: true, duration: 1.5 });
+    }
+  }, [center, zoom, map]);
   return null;
 }
 
@@ -279,11 +283,18 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return parseFloat(d.toFixed(1));
 }
 
-const CourierIcon = L.icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/2972/2972185.png',
-  iconSize: [45, 45],
-  iconAnchor: [22, 45],
-  popupAnchor: [0, -45],
+const CourierIcon = L.divIcon({
+  className: 'custom-div-icon',
+  html: `<div class="relative">
+           <div class="absolute -inset-4 bg-indigo-500/20 rounded-full animate-ping"></div>
+           <div class="w-10 h-10 bg-indigo-600 rounded-2xl shadow-lg border-2 border-white flex items-center justify-center">
+             <div class="text-white">
+               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bike"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>
+             </div>
+           </div>
+         </div>`,
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
 });
 
 const PickupIcon = L.icon({
@@ -314,23 +325,65 @@ function LeafletMapComponent({
   deliveryCoords?: { lat: number, lng: number }
 }) {
   const allLocations = location ? [location] : locations;
+  const [followCourier, setFollowCourier] = useState(true);
+  const mapRef = useRef<L.Map | null>(null);
   
   // Calculate center based on available points
   const center = useMemo(() => {
+    if (location && followCourier) return [location.lat, location.lng] as [number, number];
     if (allLocations.length > 0) return [allLocations[0].lat, allLocations[0].lng] as [number, number];
     if (pickupCoords) return [pickupCoords.lat, pickupCoords.lng] as [number, number];
     if (deliveryCoords) return [deliveryCoords.lat, deliveryCoords.lng] as [number, number];
     return ANTALYA_COORDS;
-  }, [allLocations, pickupCoords, deliveryCoords]);
+  }, [location, allLocations, pickupCoords, deliveryCoords, followCourier]);
+
+  const handleFitBounds = () => {
+    const pts: L.LatLngExpression[] = [];
+    if (location) pts.push([location.lat, location.lng]);
+    if (pickupCoords) pts.push([pickupCoords.lat, pickupCoords.lng]);
+    if (deliveryCoords) pts.push([deliveryCoords.lat, deliveryCoords.lng]);
+    
+    if (pts.length > 1 && mapRef.current) {
+      const bounds = L.latLngBounds(pts);
+      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      setFollowCourier(false);
+    }
+  };
 
   return (
     <div className="h-full w-full rounded-3xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 relative group">
-      <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
+      <MapContainer 
+        center={center} 
+        zoom={13} 
+        style={{ height: '100%', width: '100%' }}
+        ref={(m) => { if (m) mapRef.current = m; }}
+      >
         <TileLayer
           url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by Humanitarian OpenStreetMap Team'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
+        {/* Polyline to destination */}
+        {location && (status === 'accepted' || status === 'picked_up') && (
+          <>
+            <Polyline 
+              positions={[
+                [location.lat, location.lng],
+                status === 'accepted' ? [pickupCoords!.lat, pickupCoords!.lng] : [deliveryCoords!.lat, deliveryCoords!.lng]
+              ]}
+              color="#4f46e5"
+              weight={3}
+              dashArray="10, 10"
+              opacity={0.6}
+            />
+            <Circle 
+              center={status === 'accepted' ? [pickupCoords!.lat, pickupCoords!.lng] : [deliveryCoords!.lat, deliveryCoords!.lng]}
+              radius={100}
+              pathOptions={{ color: '#4f46e5', fillColor: '#4f46e5', fillOpacity: 0.1 }}
+            />
+          </>
+        )}
+
         {/* Courier Markers */}
         {allLocations.map((loc, idx) => (
           <Marker key={loc.courierId || idx} position={[loc.lat, loc.lng]} icon={CourierIcon}>
@@ -369,6 +422,27 @@ function LeafletMapComponent({
         <MapController center={center} />
       </MapContainer>
       
+      {/* Controls Overlay */}
+      <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+        <button 
+          onClick={() => setFollowCourier(!followCourier)}
+          className={cn(
+            "p-3 rounded-2xl shadow-lg border backdrop-blur-md transition-all",
+            followCourier ? "bg-indigo-600 text-white border-indigo-500" : "bg-white/90 text-slate-600 border-white/20 hover:bg-white"
+          )}
+          title={followCourier ? "Takibi Bırak" : "Kuryeyi Takip Et"}
+        >
+          <Navigation className={cn("w-5 h-5", followCourier && "animate-pulse")} />
+        </button>
+        <button 
+          onClick={handleFitBounds}
+          className="p-3 bg-white/90 text-slate-600 rounded-2xl shadow-lg border border-white/20 backdrop-blur-md hover:bg-white transition-all"
+          title="Tümünü Göster"
+        >
+          <Eye className="w-5 h-5" />
+        </button>
+      </div>
+
       {allLocations.length > 0 && (
         <div className="absolute top-4 left-4 z-[1000] bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl shadow-lg border border-white/20 flex items-center gap-3">
           <div className="relative">
@@ -2472,7 +2546,12 @@ export default function App() {
 
                       {showMap && activeOrder.status !== 'pending' && (
                         <div className="lg:col-span-12 h-[450px] mt-6">
-                          <LeafletMapComponent location={courierLocation} status={activeOrder.status} />
+                          <LeafletMapComponent 
+                            location={courierLocation} 
+                            status={activeOrder.status}
+                            pickupCoords={activeOrder.pickup_lat ? { lat: activeOrder.pickup_lat, lng: activeOrder.pickup_lng } : undefined}
+                            deliveryCoords={activeOrder.delivery_lat ? { lat: activeOrder.delivery_lat, lng: activeOrder.delivery_lng } : undefined}
+                          />
                         </div>
                       )}
                     </div>
