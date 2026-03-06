@@ -141,10 +141,6 @@ const StickManAnimation = () => {
           {/* Head */}
           <circle cx="20" cy="10" r="6" fill="white" stroke="currentColor" strokeWidth="2.5" />
           
-          {/* Helmet */}
-          <path d="M 13 10 A 7 7 0 0 1 27 10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-          <line x1="13" y1="10" x2="27" y2="10" stroke="currentColor" strokeWidth="1" />
-
           {/* Body */}
           <line x1="20" y1="16" x2="20" y2="32" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
           
@@ -1114,7 +1110,30 @@ export default function App() {
 
   useEffect(() => {
     activeOrderRef.current = activeOrder;
-  }, [activeOrder]);
+    
+    if (activeOrder && prevStatus && activeOrder.status !== prevStatus) {
+      setShowStatusAnim(true);
+      const timer = setTimeout(() => setShowStatusAnim(false), 4000);
+      return () => clearTimeout(timer);
+    }
+    
+    if (activeOrder) {
+      setPrevStatus(activeOrder.status);
+    } else {
+      setPrevStatus(null);
+    }
+  }, [activeOrder?.status]);
+
+  const getStatusLabel = (status?: OrderStatus) => {
+    switch (status) {
+      case 'pending': return 'Bekliyor';
+      case 'accepted': return 'Kabul Edildi';
+      case 'picked_up': return 'Yolda';
+      case 'delivered': return 'Teslim Edildi';
+      case 'cancelled': return 'İptal Edildi';
+      default: return 'Bilinmiyor';
+    }
+  };
 
   const [courierLocation, setCourierLocation] = useState<CourierLocation | null>(null);
   const [allCourierLocations, setAllCourierLocations] = useState<CourierLocation[]>([]);
@@ -1136,6 +1155,8 @@ export default function App() {
   const [showCallModal, setShowCallModal] = useState(false);
   const [activeCourier, setActiveCourier] = useState<UserAccount | null>(null);
   const [activeCustomer, setActiveCustomer] = useState<UserAccount | null>(null);
+  const [prevStatus, setPrevStatus] = useState<OrderStatus | null>(null);
+  const [showStatusAnim, setShowStatusAnim] = useState(false);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [showSavedAddressesModal, setShowSavedAddressesModal] = useState<{ show: boolean, target: 'pickup' | 'delivery' }>({ show: false, target: 'pickup' });
   const [saveAddressChecked, setSaveAddressChecked] = useState({ pickup: false, delivery: false });
@@ -2116,18 +2137,23 @@ export default function App() {
                               <p className="text-[10px] text-slate-400 font-mono">#{order.id}</p>
                             </td>
                             <td className="px-6 py-4">
-                              <span className={cn(
-                                "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                                order.status === 'delivered' ? "bg-emerald-100 text-emerald-700" :
-                                order.status === 'pending' ? "bg-amber-100 text-amber-700" :
-                                order.status === 'cancelled' ? "bg-rose-100 text-rose-700" :
-                                "bg-indigo-100 text-indigo-700"
-                              )}>
-                                {order.status === 'pending' ? 'Bekliyor' :
-                                 order.status === 'accepted' ? 'Kabul Edildi' :
-                                 order.status === 'picked_up' ? 'Yolda' :
-                                 order.status === 'delivered' ? 'Teslim Edildi' : 'İptal Edildi'}
-                              </span>
+                              <AnimatePresence mode="wait">
+                                <motion.span 
+                                  key={order.status}
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  className={cn(
+                                    "inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                                    order.status === 'delivered' ? "bg-emerald-100 text-emerald-700" :
+                                    order.status === 'pending' ? "bg-amber-100 text-amber-700" :
+                                    order.status === 'cancelled' ? "bg-rose-100 text-rose-700" :
+                                    "bg-indigo-100 text-indigo-700"
+                                  )}
+                                >
+                                  {getStatusLabel(order.status)}
+                                </motion.span>
+                              </AnimatePresence>
                             </td>
                             <td className="px-6 py-4">
                               <p className="text-sm font-medium text-slate-600">{order.courier_id || '-'}</p>
@@ -2492,9 +2518,26 @@ export default function App() {
                   >
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
                       <div>
-                        <span className="inline-block px-4 py-1.5 bg-indigo-50 text-indigo-600 text-[11px] font-bold uppercase tracking-widest rounded-full mb-3">
-                          {activeOrder.status === 'pending' ? 'Kurye Aranıyor' : 'Teslimat Sürecinde'}
-                        </span>
+                        <AnimatePresence mode="wait">
+                          <motion.span 
+                            key={activeOrder.status}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className={cn(
+                              "inline-block px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest rounded-full mb-3",
+                              activeOrder.status === 'pending' ? "bg-amber-50 text-amber-600" :
+                              activeOrder.status === 'accepted' ? "bg-indigo-50 text-indigo-600" :
+                              activeOrder.status === 'picked_up' ? "bg-blue-50 text-blue-600" :
+                              activeOrder.status === 'delivered' ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-600"
+                            )}
+                          >
+                            {activeOrder.status === 'pending' ? 'Kurye Aranıyor' : 
+                             activeOrder.status === 'accepted' ? 'Kurye Atandı' :
+                             activeOrder.status === 'picked_up' ? 'Paket Yolda' :
+                             activeOrder.status === 'delivered' ? 'Teslim Edildi' : 'Sipariş Durumu'}
+                          </motion.span>
+                        </AnimatePresence>
                         <h2 className="text-3xl font-bold">Sipariş Takibi</h2>
                         <p className="text-slate-400 text-sm mt-1">Takip No: #{activeOrder.id}</p>
                       </div>
@@ -2520,22 +2563,48 @@ export default function App() {
                       <div className={cn("space-y-8", showMap ? "lg:col-span-7" : "lg:col-span-12")}>
                         <div className="flex gap-5">
                           <div className="flex flex-col items-center">
-                            <div className={cn("w-4 h-4 rounded-full border-4 border-white ring-2 ring-offset-2", activeOrder.status !== 'pending' ? "bg-emerald-500 ring-emerald-500" : "bg-slate-200 ring-slate-200")}></div>
-                            <div className="w-0.5 h-16 bg-slate-100"></div>
-                            <div className={cn("w-4 h-4 rounded-full border-4 border-white ring-2 ring-offset-2", activeOrder.status === 'picked_up' || activeOrder.status === 'delivered' ? "bg-emerald-500 ring-emerald-500" : "bg-slate-200 ring-slate-200")}></div>
-                            <div className="w-0.5 h-16 bg-slate-100"></div>
-                            <div className={cn("w-4 h-4 rounded-full border-4 border-white ring-2 ring-offset-2", activeOrder.status === 'delivered' ? "bg-emerald-500 ring-emerald-500" : "bg-slate-200 ring-slate-200")}></div>
+                            <motion.div 
+                              animate={{ 
+                                scale: activeOrder.status !== 'pending' ? [1, 1.2, 1] : 1,
+                                backgroundColor: activeOrder.status !== 'pending' ? "#10b981" : "#e2e8f0"
+                              }}
+                              className={cn("w-4 h-4 rounded-full border-4 border-white ring-2 ring-offset-2", activeOrder.status !== 'pending' ? "ring-emerald-500" : "ring-slate-200")}
+                            ></motion.div>
+                            <motion.div 
+                              initial={false}
+                              animate={{ backgroundColor: activeOrder.status !== 'pending' ? "#10b981" : "#f1f5f9" }}
+                              className="w-0.5 h-16"
+                            ></motion.div>
+                            <motion.div 
+                              animate={{ 
+                                scale: (activeOrder.status === 'picked_up' || activeOrder.status === 'delivered') ? [1, 1.2, 1] : 1,
+                                backgroundColor: (activeOrder.status === 'picked_up' || activeOrder.status === 'delivered') ? "#10b981" : "#e2e8f0"
+                              }}
+                              className={cn("w-4 h-4 rounded-full border-4 border-white ring-2 ring-offset-2", (activeOrder.status === 'picked_up' || activeOrder.status === 'delivered') ? "ring-emerald-500" : "ring-slate-200")}
+                            ></motion.div>
+                            <motion.div 
+                              initial={false}
+                              animate={{ backgroundColor: (activeOrder.status === 'picked_up' || activeOrder.status === 'delivered') ? "#10b981" : "#f1f5f9" }}
+                              className="w-0.5 h-16"
+                            ></motion.div>
+                            <motion.div 
+                              animate={{ 
+                                scale: activeOrder.status === 'delivered' ? [1, 1.2, 1] : 1,
+                                backgroundColor: activeOrder.status === 'delivered' ? "#10b981" : "#e2e8f0"
+                              }}
+                              className={cn("w-4 h-4 rounded-full border-4 border-white ring-2 ring-offset-2", activeOrder.status === 'delivered' ? "ring-emerald-500" : "ring-slate-200")}
+                            ></motion.div>
                           </div>
                           <div className="flex flex-col gap-12 py-0.5">
-                            <div className="flex flex-col">
+                            <div className={cn("flex flex-col transition-opacity", activeOrder.status === 'pending' ? "opacity-40" : "opacity-100")}>
                               <span className="text-base font-bold">Kurye Atandı</span>
                               <span className="text-sm text-slate-400">Kuryeniz paket için yola çıktı</span>
                             </div>
-                            <div className="flex flex-col">
+                            <div className={cn("flex flex-col transition-opacity", (activeOrder.status === 'picked_up' || activeOrder.status === 'delivered') ? "opacity-100" : "opacity-40")}>
                               <span className="text-base font-bold">Paket Alındı</span>
                               <span className="text-sm text-slate-400">Paketiniz kurye tarafından teslim alındı</span>
                             </div>
-                            <div className="flex flex-col">
+                            <div className={cn("flex flex-col transition-opacity", activeOrder.status === 'delivered' ? "opacity-100" : "opacity-40")}>
                               <span className="text-base font-bold">Teslim Edildi</span>
                               <span className="text-sm text-slate-400">Paketiniz başarıyla ulaştı</span>
                             </div>
@@ -3317,6 +3386,52 @@ export default function App() {
       </AnimatePresence>
 
       <SavedAddressesModal />
+
+      <AnimatePresence>
+        {showStatusAnim && (
+          <>
+            {activeOrder?.status === 'accepted' ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.5 }}
+                className="fixed inset-0 z-[3000] flex items-center justify-center p-6 pointer-events-none"
+              >
+                <motion.div
+                  animate={{ 
+                    scale: [1, 1.05, 1],
+                  }}
+                  transition={{ duration: 0.5, repeat: 1 }}
+                  className="bg-white/95 backdrop-blur-md p-10 md:p-16 rounded-[3rem] shadow-2xl border-4 border-emerald-500 flex flex-col items-center gap-6 max-w-lg"
+                >
+                  <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                    <CheckCircle2 className="w-16 h-16" />
+                  </div>
+                  <div className="text-center">
+                    <h2 className="text-3xl font-black text-slate-900">Kurye Atandı!</h2>
+                    <p className="text-slate-500 font-medium mt-2">Siparişiniz kabul edildi ve kuryeniz yola çıktı.</p>
+                  </div>
+                </motion.div>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 50, x: '-50%' }}
+                animate={{ opacity: 1, y: 0, x: '-50%' }}
+                exit={{ opacity: 0, y: -50, x: '-50%' }}
+                className="fixed bottom-10 left-1/2 z-[3000] bg-slate-900 text-white px-8 py-5 rounded-3xl shadow-2xl flex items-center gap-4 border border-white/10 min-w-[320px]"
+              >
+                <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white shrink-0">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm">Sipariş Durumu Güncellendi</p>
+                  <p className="text-xs text-slate-400">Yeni Durum: <span className="text-emerald-400 font-bold">{getStatusLabel(activeOrder?.status)}</span></p>
+                </div>
+              </motion.div>
+            )}
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
