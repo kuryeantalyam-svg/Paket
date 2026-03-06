@@ -353,7 +353,7 @@ async function startServer() {
   // API Routes
   const adminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const password = req.headers['x-admin-password'];
-    const expectedPassword = process.env.ADMIN_PASSWORD || '1234';
+    const expectedPassword = process.env.ADMIN_PASSWORD || '5807';
     if (password === expectedPassword) {
       next();
     } else {
@@ -399,6 +399,59 @@ async function startServer() {
       res.json({ message: "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi." });
     } else {
       res.status(404).json({ error: "Bu e-posta adresi ile kayıtlı bir kullanıcı bulunamadı." });
+    }
+  });
+
+  function getPrice(type: string, pkgType: string, dist: number) {
+    if (type === 'motorcycle') {
+      const cheapTypes = ['Dosya / Evrak', 'Yemek / Gıda', 'Küçük Paket', 'Tıbbi Malzeme'];
+      let base = cheapTypes.includes(pkgType) ? 100 : 120;
+      if (dist > 8) base *= 1.2;
+      return Math.round(base);
+    } else if (type === 'car') {
+      let base = 300;
+      if (dist > 5) {
+        base += (dist - 5) * 10;
+      }
+      return Math.round(base);
+    } else if (type === 'van') {
+      let base = 500;
+      if (dist > 5) {
+        base += (dist - 5) * 10;
+      }
+      return Math.round(base);
+    }
+    return 0;
+  }
+
+  app.get("/api/courier/earnings/:courierId", (req, res) => {
+    const { courierId } = req.params;
+    try {
+      const completedOrders = db.prepare("SELECT * FROM orders WHERE courier_id = ? AND status = 'delivered' ORDER BY created_at DESC").all(courierId) as any[];
+      
+      const earnings = completedOrders.map(order => {
+        const price = getPrice(order.vehicle_type, order.package_type || 'Diğer', order.distance || 0);
+        return {
+          id: order.id,
+          customerName: order.customer_name,
+          date: order.created_at,
+          amount: price,
+          pickup: order.pickup_address,
+          delivery: order.delivery_address,
+          distance: order.distance
+        };
+      });
+
+      const totalEarnings = earnings.reduce((sum, item) => sum + item.amount, 0);
+
+      res.json({
+        totalEarnings,
+        deliveriesCount: earnings.length,
+        breakdown: earnings
+      });
+    } catch (error) {
+      console.error("Error fetching courier earnings:", error);
+      res.status(500).json({ error: "Kazanç bilgileri alınırken bir hata oluştu" });
     }
   });
 

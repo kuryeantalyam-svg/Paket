@@ -131,64 +131,59 @@ const StickManAnimation = () => {
       >
         <svg
           width="100"
-          height="100"
-          viewBox="0 0 40 40"
+          height="120"
+          viewBox="0 0 40 48"
           className="text-indigo-600 drop-shadow-2xl"
         >
-          {/* Head */}
-          <circle cx="20" cy="8" r="6" fill="white" stroke="currentColor" strokeWidth="2.5" />
+          {/* Backpack */}
+          <rect x="13" y="18" width="7" height="12" rx="2" fill="currentColor" opacity="0.9" />
           
+          {/* Head */}
+          <circle cx="20" cy="10" r="6" fill="white" stroke="currentColor" strokeWidth="2.5" />
+          
+          {/* Helmet */}
+          <path d="M 13 10 A 7 7 0 0 1 27 10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          <line x1="13" y1="10" x2="27" y2="10" stroke="currentColor" strokeWidth="1" />
+
           {/* Body */}
-          <line x1="20" y1="14" x2="20" y2="26" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="20" y1="16" x2="20" y2="32" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
           
           {/* Arms - Waving */}
           <motion.path 
-            d="M 20 18 L 12 22" 
+            d="M 20 20 L 12 24" 
             fill="none" 
             stroke="currentColor" 
             strokeWidth="2.5" 
             strokeLinecap="round"
-            animate={{ d: ["M 20 18 L 12 22", "M 20 18 L 8 16", "M 20 18 L 12 22"] }}
+            animate={{ d: ["M 20 20 L 12 24", "M 20 20 L 8 18", "M 20 20 L 12 24"] }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.path 
-            d="M 20 18 L 28 22" 
+            d="M 20 20 L 28 24" 
             fill="none" 
             stroke="currentColor" 
             strokeWidth="2.5" 
             strokeLinecap="round"
-            animate={{ d: ["M 20 18 L 28 22", "M 20 18 L 32 16", "M 20 18 L 28 22"] }}
+            animate={{ d: ["M 20 20 L 28 24", "M 20 20 L 32 18", "M 20 20 L 28 24"] }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.75 }}
           />
           
-          {/* Legs - Sitting position */}
-          <path 
-            d="M 20 26 Q 20 34 12 34 L 4 34" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2.5" 
-            strokeLinecap="round" 
-          />
-          <path 
-            d="M 20 26 Q 20 34 28 34 L 36 34" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2.5" 
-            strokeLinecap="round" 
-          />
+          {/* Legs - Standing */}
+          <line x1="20" y1="32" x2="15" y2="44" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="20" y1="32" x2="25" y2="44" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
           
           {/* Eyes */}
-          <circle cx="18" cy="7" r="0.8" fill="currentColor" />
-          <circle cx="22" cy="7" r="0.8" fill="currentColor" />
+          <circle cx="18" cy="9" r="0.8" fill="currentColor" />
+          <circle cx="22" cy="9" r="0.8" fill="currentColor" />
           
           {/* Smile */}
           <motion.path 
-            d="M 17 10 Q 20 12 23 10" 
+            d="M 17 12 Q 20 14 23 12" 
             fill="none" 
             stroke="currentColor" 
             strokeWidth="1" 
             strokeLinecap="round"
-            animate={{ d: ["M 17 10 Q 20 12 23 10", "M 17 10 Q 20 13 23 10", "M 17 10 Q 20 12 23 10"] }}
+            animate={{ d: ["M 17 12 Q 20 14 23 12", "M 17 12 Q 20 15 23 12", "M 17 12 Q 20 14 23 12"] }}
             transition={{ duration: 0.5, repeat: Infinity }}
           />
         </svg>
@@ -1066,7 +1061,13 @@ export default function App() {
     const saved = localStorage.getItem('smartpack_user');
     return saved ? JSON.parse(saved).role : 'customer';
   });
-  const [view, setView] = useState<'active' | 'history' | 'addresses'>('active');
+  const [view, setView] = useState<'active' | 'history' | 'addresses' | 'earnings'>('active');
+  const [earningsData, setEarningsData] = useState<{
+    totalEarnings: number;
+    deliveriesCount: number;
+    breakdown: any[];
+  } | null>(null);
+  const [loadingEarnings, setLoadingEarnings] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [users, setUsers] = useState<UserAccount[]>([]);
@@ -1457,7 +1458,7 @@ export default function App() {
 
   useEffect(() => {
     if (role === 'admin') {
-      const adminHeaders = { 'x-admin-password': adminPasswordInput || '1234' };
+      const adminHeaders = { 'x-admin-password': adminPasswordInput || '5807' };
       fetch('/api/admin/users', { headers: adminHeaders }).then(res => res.json()).then(setUsers);
       const fetchStats = () => {
         fetch('/api/admin/stats', { headers: adminHeaders }).then(res => res.json()).then(data => {
@@ -1710,6 +1711,22 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    if (view === 'earnings' && user?.id) {
+      setLoadingEarnings(true);
+      fetch(`/api/courier/earnings/${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          setEarningsData(data);
+          setLoadingEarnings(false);
+        })
+        .catch(err => {
+          console.error("Earnings fetch error:", err);
+          setLoadingEarnings(false);
+        });
+    }
+  }, [view, user?.id]);
+
   const handleNavigate = (address: string) => {
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
   };
@@ -1814,6 +1831,18 @@ export default function App() {
             Sipariş Geçmişi
             {view === 'history' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
           </button>
+          {role === 'courier' && (
+            <button 
+              onClick={() => setView('earnings')}
+              className={cn(
+                "pb-4 px-2 text-sm font-bold transition-all relative",
+                view === 'earnings' ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              Kazançlarım
+              {view === 'earnings' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
+            </button>
+          )}
           {role === 'customer' && (
             <button 
               onClick={() => setView('addresses')}
@@ -1851,7 +1880,7 @@ export default function App() {
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      if (adminPasswordInput === '1234') {
+                      if (adminPasswordInput === '5807') {
                         setIsAdminUnlocked(true);
                       } else {
                         setAdminPasswordError(true);
@@ -1869,7 +1898,7 @@ export default function App() {
                 {adminPasswordError && <p className="text-rose-500 text-xs font-bold mt-2">Hatalı şifre!</p>}
                 <button 
                   onClick={() => {
-                    if (adminPasswordInput === '1234') {
+                    if (adminPasswordInput === '5807') {
                       setIsAdminUnlocked(true);
                     } else {
                       setAdminPasswordError(true);
@@ -1980,7 +2009,7 @@ export default function App() {
                       method: 'POST',
                       headers: { 
                         'Content-Type': 'application/json',
-                        'x-admin-password': adminPasswordInput || '1234'
+                        'x-admin-password': adminPasswordInput || '5807'
                       },
                       body: JSON.stringify({ message, targetRole: 'courier' })
                     });
@@ -2679,7 +2708,7 @@ export default function App() {
 
         {role === 'courier' && (
           <div className="space-y-8">
-            {view === 'active' ? (
+            {view === 'active' && (
               <div className="space-y-8">
                 <div className="flex justify-between items-center">
                   <div>
@@ -2967,7 +2996,9 @@ export default function App() {
                   </div>
                 )}
               </div>
-            ) : (
+            )}
+
+            {view === 'history' && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">Tamamlanan Teslimatlarınız</h2>
                 <div className="grid grid-cols-1 gap-4">
@@ -2988,6 +3019,89 @@ export default function App() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {view === 'earnings' && (
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="bg-white/20 p-3 rounded-2xl">
+                        <TrendingUp className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-lg font-bold">Toplam Kazanç</h3>
+                    </div>
+                    {loadingEarnings ? (
+                      <div className="h-10 w-32 bg-white/10 animate-pulse rounded-lg"></div>
+                    ) : (
+                      <p className="text-4xl font-black">₺{earningsData?.totalEarnings.toLocaleString('tr-TR') || '0'}</p>
+                    )}
+                    <p className="text-indigo-100 text-sm mt-2">Tüm zamanların toplam kazancı</p>
+                  </div>
+
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="bg-emerald-50 p-3 rounded-2xl text-emerald-600">
+                        <CheckCircle2 className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-lg font-bold">Tamamlanan Teslimat</h3>
+                    </div>
+                    {loadingEarnings ? (
+                      <div className="h-10 w-24 bg-slate-100 animate-pulse rounded-lg"></div>
+                    ) : (
+                      <p className="text-4xl font-black text-slate-900">{earningsData?.deliveriesCount || '0'}</p>
+                    )}
+                    <p className="text-slate-400 text-sm mt-2">Başarıyla tamamlanan paket sayısı</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-xl font-bold flex items-center gap-2">
+                    <History className="w-5 h-5 text-slate-400" />
+                    Kazanç Detayları
+                  </h3>
+                  <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
+                    {loadingEarnings ? (
+                      <div className="p-12 flex flex-col items-center justify-center gap-4">
+                        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-sm text-slate-400 font-bold">Veriler yükleniyor...</p>
+                      </div>
+                    ) : earningsData?.breakdown.length === 0 ? (
+                      <div className="p-12 text-center">
+                        <p className="text-slate-400 italic">Henüz tamamlanmış bir teslimatınız bulunmuyor.</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200">
+                              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Müşteri / Tarih</th>
+                              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Mesafe</th>
+                              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Tutar</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {earningsData?.breakdown.map((item: any) => (
+                              <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="px-6 py-4">
+                                  <p className="font-bold text-sm">{item.customerName}</p>
+                                  <p className="text-[10px] text-slate-400">{new Date(item.date).toLocaleDateString('tr-TR')} {new Date(item.date).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</p>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <p className="text-sm font-medium text-slate-600">{item.distance?.toFixed(1) || '0'} km</p>
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                  <p className="text-sm font-black text-indigo-600">₺{item.amount}</p>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
