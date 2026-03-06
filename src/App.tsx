@@ -2739,7 +2739,7 @@ export default function App() {
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">Tamamlanan Teslimatlarınız</h2>
                 <div className="grid grid-cols-1 gap-4">
-                  {orders.filter(o => o.status === 'delivered' || o.status === 'cancelled').map(order => (
+                  {orders.filter(o => (o.status === 'delivered' || o.status === 'cancelled') && (role === 'admin' || o.customer_id === user?.id)).map(order => (
                     <div key={order.id} className="bg-white p-6 rounded-3xl border border-slate-200 flex flex-col md:flex-row justify-between gap-4">
                       <div className="flex items-center gap-4">
                         <div className={cn("p-3 rounded-2xl", order.status === 'delivered' ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600")}>
@@ -2782,7 +2782,7 @@ export default function App() {
                       </div>
                     </div>
                   ))}
-                  {orders.filter(o => o.status === 'delivered' || o.status === 'cancelled').length === 0 && (
+                  {orders.filter(o => (o.status === 'delivered' || o.status === 'cancelled') && (role === 'admin' || o.customer_id === user?.id)).length === 0 && (
                     <div className="text-center py-12 text-slate-400">Henüz geçmiş siparişiniz bulunmuyor.</div>
                   )}
                 </div>
@@ -3156,7 +3156,7 @@ export default function App() {
                   ))}
                 </div>
 
-                {orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length === 0 && (
+                {orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled' && (o.status === 'pending' || o.courier_id === myCourierId)).length === 0 && (
                   <div className="flex flex-col items-center justify-center py-24 text-slate-400">
                     <div className="bg-slate-100 p-8 rounded-full mb-6">
                       <Bell className="w-12 h-12 opacity-20" />
@@ -3189,6 +3189,9 @@ export default function App() {
                       </div>
                     </div>
                   ))}
+                  {orders.filter(o => (o.status === 'delivered' || o.status === 'cancelled') && o.courier_id === myCourierId).length === 0 && (
+                    <div className="text-center py-12 text-slate-400">Henüz geçmiş siparişiniz bulunmuyor.</div>
+                  )}
                 </div>
               </div>
             )}
