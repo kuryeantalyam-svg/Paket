@@ -542,7 +542,12 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user:
       const data = await res.json();
       if (res.ok) {
         if (isLogin && data.role !== role && role !== 'admin') {
-          setError(`Bu hesap ${data.role === 'customer' ? 'Müşteri' : 'Kurye'} rolüne ait. Lütfen doğru rolü seçin.`);
+          const roleLabels: Record<string, string> = {
+            'customer': 'Müşteri',
+            'courier': 'Kurye',
+            'business': 'İşletme'
+          };
+          setError(`Bu hesap ${roleLabels[data.role] || data.role} rolüne ait. Lütfen doğru rolü seçin.`);
           return;
         }
         onLogin(data);
@@ -651,14 +656,16 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user:
                 {!isLogin && (
                   <>
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Ad Soyad</label>
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                        {role === 'business' ? 'İşletme Adı' : 'Ad Soyad'}
+                      </label>
                       <input 
                         type="text" 
                         required
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                        placeholder="Ahmet Yılmaz"
+                        placeholder={role === 'business' ? "İşletme Adı Giriniz" : "Ahmet Yılmaz"}
                       />
                     </div>
                     <div>
@@ -710,12 +717,12 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user:
 
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Rolünüz</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     <button 
                       type="button"
                       onClick={() => setRole('customer')}
                       className={cn(
-                        "py-3 rounded-xl text-sm font-bold border transition-all",
+                        "py-3 rounded-xl text-xs font-bold border transition-all",
                         role === 'customer' ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-slate-50 border-slate-200 text-slate-500"
                       )}
                     >
@@ -725,11 +732,21 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user:
                       type="button"
                       onClick={() => setRole('courier')}
                       className={cn(
-                        "py-3 rounded-xl text-sm font-bold border transition-all",
+                        "py-3 rounded-xl text-xs font-bold border transition-all",
                         role === 'courier' ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-slate-50 border-slate-200 text-slate-500"
                       )}
                     >
                       Kurye
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setRole('business')}
+                      className={cn(
+                        "py-3 rounded-xl text-xs font-bold border transition-all",
+                        role === 'business' ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-slate-50 border-slate-200 text-slate-500"
+                      )}
+                    >
+                      İşletme
                     </button>
                   </div>
                 </div>
@@ -747,7 +764,7 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user:
                         className="mt-1 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all"
                       />
                       <span className="text-xs text-slate-500 leading-relaxed group-hover:text-slate-700 transition-colors">
-                        {role === 'customer' ? (
+                        {(role === 'customer' || role === 'business') ? (
                           <>
                             <button 
                               type="button"
@@ -1222,7 +1239,7 @@ export default function App() {
   });
 
   useEffect(() => {
-    if (user && user.role === 'customer') {
+    if (user && (user.role === 'customer' || user.role === 'business')) {
       if (!customerName) setCustomerName(user.full_name || '');
       if (!customerPhone) setCustomerPhone(user.phone || '');
     }
@@ -1843,7 +1860,7 @@ export default function App() {
               {view === 'earnings' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
             </button>
           )}
-          {role === 'customer' && (
+          {(role === 'customer' || role === 'business') && (
             <button 
               onClick={() => setView('addresses')}
               className={cn(
@@ -2054,9 +2071,11 @@ export default function App() {
                         </div>
                         <div className={cn(
                           "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest",
-                          u.role === 'courier' ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-600"
+                          u.role === 'courier' ? "bg-emerald-100 text-emerald-600" : 
+                          u.role === 'business' ? "bg-purple-100 text-purple-600" :
+                          "bg-blue-100 text-blue-600"
                         )}>
-                          {u.role}
+                          {u.role === 'business' ? 'İşletme' : u.role === 'courier' ? 'Kurye' : 'Müşteri'}
                         </div>
                       </div>
                       <div className="mt-2 pt-3 border-t border-slate-200 flex items-center gap-2">
@@ -2166,7 +2185,7 @@ export default function App() {
         )
       )}
 
-        {role === 'customer' && (
+        {(role === 'customer' || role === 'business') && (
           <div className="space-y-8">
             {view === 'active' ? (
               <div className="space-y-8">

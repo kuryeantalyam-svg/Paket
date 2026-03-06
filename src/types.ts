@@ -22,4 +22,4 @@ export interface CourierLocation {
   updated_at: string;
 }
 
-export type AppRole = 'customer' | 'courier';
+export type AppRole = 'customer' | 'courier' | 'business';
