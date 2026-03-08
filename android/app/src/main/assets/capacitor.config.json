@@ -1,0 +1,8 @@
+{
+	"appId": "com.kuryeantalya.app",
+	"appName": "Kurye Antalya",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	}
+}

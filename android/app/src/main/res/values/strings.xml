@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kurye Antalya</string>
+    <string name="title_activity_main">Kurye Antalya</string>
+    <string name="package_name">com.kuryeantalya.app</string>
+    <string name="custom_url_scheme">com.kuryeantalya.app</string>
+</resources>
