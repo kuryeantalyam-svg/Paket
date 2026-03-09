@@ -468,7 +468,7 @@ function LeafletMapComponent({
   );
 }
 
-function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user: UserAccount) => void, expectedRole: AppRole, onAdminTrigger: () => void }) {
+function AuthScreen({ onLogin, expectedRole, onAdminTrigger, courierLocations }: { onLogin: (user: UserAccount) => void, expectedRole: AppRole, onAdminTrigger: () => void, courierLocations: CourierLocation[] }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -629,6 +629,27 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user:
               <div className="bg-slate-900 p-6 rounded-3xl text-white">
                 <p className="text-3xl font-black">7/24</p>
                 <p className="text-xs font-bold uppercase tracking-wider opacity-80">Kesintisiz Hizmet</p>
+              </div>
+            </div>
+
+            {/* Live Map Section on Landing Page */}
+            <div id="live-map-section" className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/20 overflow-hidden">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Canlı Kurye Haritası</h3>
+                  <p className="text-sm text-slate-500">Antalya genelindeki aktif kuryelerimiz</p>
+                </div>
+                <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border border-emerald-100">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                  {courierLocations.length} Kurye Aktif
+                </div>
+              </div>
+              <div className="h-[300px] rounded-3xl overflow-hidden border border-slate-100 shadow-inner">
+                <LeafletMapComponent locations={courierLocations} />
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-[10px] text-slate-400 italic">
+                <Navigation className="w-3 h-3" />
+                Kuryelerimiz Antalya'nın her noktasında hizmetinizdedir.
               </div>
             </div>
           </div>
@@ -1194,7 +1215,7 @@ export default function App() {
     const saved = localStorage.getItem('smartpack_user');
     return saved ? JSON.parse(saved).role : 'customer';
   });
-  const [view, setView] = useState<'active' | 'history' | 'addresses' | 'earnings'>('active');
+  const [view, setView] = useState<'active' | 'history' | 'addresses' | 'earnings' | 'live_map'>('active');
   const [earningsData, setEarningsData] = useState<{
     totalEarnings: number;
     deliveriesCount: number;
@@ -1647,20 +1668,32 @@ export default function App() {
   }, [activeOrder?.courier_id]);
 
   useEffect(() => {
-    if (role === 'admin') {
-      const adminHeaders = { 'x-admin-password': adminPasswordInput || '5807' };
-      fetch(API_BASE_URL + '/api/admin/users', { headers: adminHeaders }).then(res => res.json()).then(setUsers);
-      const fetchStats = () => {
+    const fetchStats = () => {
+      if (role === 'admin') {
+        const adminHeaders = { 'x-admin-password': adminPasswordInput || '5807' };
         fetch(API_BASE_URL + '/api/admin/stats', { headers: adminHeaders }).then(res => res.json()).then(data => {
           setOnlineCouriers(data.onlineCouriers);
           setWebhookConfigured(data.webhookConfigured);
         });
-        fetch(API_BASE_URL + '/api/couriers').then(res => res.json()).then(setAllCourierLocations);
-      };
-      fetchStats();
-      const interval = setInterval(fetchStats, 5000);
-      return () => clearInterval(interval);
+      }
+      // Fetch online couriers for everyone to show on live map
+      fetch(API_BASE_URL + '/api/couriers').then(res => res.json()).then(data => {
+        setAllCourierLocations(data);
+        if (role !== 'admin') {
+          setOnlineCouriers(data.length);
+        }
+      });
+    };
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 10000); // Refresh every 10 seconds
+
+    if (role === 'admin') {
+      const adminHeaders = { 'x-admin-password': adminPasswordInput || '5807' };
+      fetch(API_BASE_URL + '/api/admin/users', { headers: adminHeaders }).then(res => res.json()).then(setUsers);
     }
+
+    return () => clearInterval(interval);
   }, [role, adminPasswordInput]);
 
   const playNotificationSound = () => {
@@ -1933,7 +1966,7 @@ export default function App() {
   };
 
   if (!user && role !== 'admin') {
-    return <AuthScreen expectedRole={role} onAdminTrigger={() => setRole('admin')} onLogin={(u) => {
+    return <AuthScreen courierLocations={allCourierLocations} expectedRole={role} onAdminTrigger={() => setRole('admin')} onLogin={(u) => {
       setUser(u);
       setRole(u.role);
     }} />;
@@ -1950,6 +1983,22 @@ export default function App() {
         </div>
         
         <div className="flex items-center gap-4">
+          <button 
+            onClick={() => {
+              if (user) {
+                setView('live_map');
+              } else {
+                const mapSection = document.getElementById('live-map-section');
+                if (mapSection) {
+                  mapSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }
+            }}
+            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 text-xs font-bold hover:bg-emerald-100 transition-all"
+          >
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            Canlı Harita
+          </button>
           {user && (
             <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100">
               <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
@@ -2010,6 +2059,16 @@ export default function App() {
           >
             Aktif Talepler
             {view === 'active' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
+          </button>
+          <button 
+            onClick={() => setView('live_map')}
+            className={cn(
+              "pb-4 px-2 text-sm font-bold transition-all relative",
+              view === 'live_map' ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+            )}
+          >
+            Canlı Harita
+            {view === 'live_map' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
           </button>
           <button 
             onClick={() => setView('history')}
@@ -3319,7 +3378,36 @@ export default function App() {
               </div>
             )}
 
-            {view === 'history' && (
+            {view === 'live_map' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-3xl font-bold">Canlı Kurye Takibi</h2>
+                <p className="text-slate-500 text-sm mt-1">Antalya genelindeki tüm aktif kuryelerimizi anlık izleyin.</p>
+              </div>
+              <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-4 py-2 rounded-2xl text-xs font-bold border border-emerald-100">
+                <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                {onlineCouriers} Kurye Çevrimiçi
+              </div>
+            </div>
+            <div className="h-[600px] bg-white p-4 rounded-[2.5rem] shadow-xl border border-slate-200">
+              <LeafletMapComponent locations={allCourierLocations} />
+            </div>
+            <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100 flex items-start gap-4">
+              <div className="bg-indigo-600 p-3 rounded-2xl text-white shadow-lg shadow-indigo-200">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-indigo-900">Güvenli ve Şeffaf Teslimat</h4>
+                <p className="text-sm text-indigo-700/70 mt-1 leading-relaxed">
+                  SmartPack ile gönderileriniz her an kontrolünüz altında. Kuryelerimizin konumları GPS üzerinden gerçek zamanlı olarak paylaşılmaktadır.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {view === 'history' && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">Tamamlanan Teslimatlarınız</h2>
                 <div className="grid grid-cols-1 gap-4">
