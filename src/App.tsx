@@ -311,6 +311,14 @@ const DeliveryIcon = L.icon({
   popupAnchor: [0, -32],
 });
 
+function RecenterMap({ center }: { center: [number, number] }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center);
+  }, [center, map]);
+  return null;
+}
+
 function LeafletMapComponent({ 
   location, 
   locations = [], 
@@ -327,6 +335,7 @@ function LeafletMapComponent({
   const allLocations = location ? [location] : locations;
   const [followCourier, setFollowCourier] = useState(true);
   const mapRef = useRef<L.Map | null>(null);
+  const [hasFitBounds, setHasFitBounds] = useState(false);
   
   // Calculate center based on available points
   const center = useMemo(() => {
@@ -343,12 +352,29 @@ function LeafletMapComponent({
     if (pickupCoords) pts.push([pickupCoords.lat, pickupCoords.lng]);
     if (deliveryCoords) pts.push([deliveryCoords.lat, deliveryCoords.lng]);
     
-    if (pts.length > 1 && mapRef.current) {
-      const bounds = L.latLngBounds(pts);
-      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+    // Add all locations if no specific location is being followed
+    if (!location && locations.length > 0) {
+      locations.forEach(loc => pts.push([loc.lat, loc.lng]));
+    }
+    
+    if (pts.length > 0 && mapRef.current) {
+      if (pts.length === 1) {
+        mapRef.current.setView(pts[0], 15);
+      } else {
+        const bounds = L.latLngBounds(pts);
+        mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      }
       setFollowCourier(false);
     }
   };
+
+  // Auto fit bounds on first load of locations
+  useEffect(() => {
+    if (!hasFitBounds && allLocations.length > 0 && mapRef.current) {
+      handleFitBounds();
+      setHasFitBounds(true);
+    }
+  }, [allLocations.length, hasFitBounds]);
 
   return (
     <div className="h-full w-full rounded-3xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 relative group">
@@ -362,6 +388,8 @@ function LeafletMapComponent({
           url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
+        
+        {location && followCourier && <RecenterMap center={center} />}
         
         {/* Polyline to destination */}
         {location && (status === 'accepted' || status === 'picked_up') && (
@@ -1538,15 +1566,13 @@ export default function App() {
           playNotificationSound();
         }
       } else if (data.type === 'courier_location') {
-        if (role === 'admin') {
-          setAllCourierLocations(prev => {
-            const exists = prev.some(l => l.courierId === data.courierId);
-            if (exists) {
-              return prev.map(l => l.courierId === data.courierId ? data : l);
-            }
-            return [...prev, data];
-          });
-        }
+        setAllCourierLocations(prev => {
+          const exists = prev.some(l => l.courierId === data.courierId);
+          if (exists) {
+            return prev.map(l => l.courierId === data.courierId ? data : l);
+          }
+          return [...prev, data];
+        });
 
         const currentOrder = activeOrderRef.current;
         const isAssignedCourier = currentOrder?.courier_id === data.courierId;
@@ -1556,9 +1582,7 @@ export default function App() {
           setCourierLocation(data);
         }
       } else if (data.type === 'courier_offline') {
-        if (role === 'admin') {
-          setAllCourierLocations(prev => prev.filter(l => l.courierId !== data.courierId));
-        }
+        setAllCourierLocations(prev => prev.filter(l => l.courierId !== data.courierId));
         if (courierLocation?.courierId === data.courierId) {
           setCourierLocation(null);
         }
@@ -2369,7 +2393,7 @@ export default function App() {
                             <User className="w-5 h-5" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold">{loc.courier_id}</p>
+                            <p className="text-sm font-bold">{loc.courierId}</p>
                             <p className="text-[10px] text-emerald-500 font-bold uppercase">Aktif</p>
                           </div>
                         </div>
