@@ -496,7 +496,7 @@ function LeafletMapComponent({
   );
 }
 
-function AuthScreen({ onLogin, expectedRole, onAdminTrigger, courierLocations }: { onLogin: (user: UserAccount) => void, expectedRole: AppRole, onAdminTrigger: () => void, courierLocations: CourierLocation[] }) {
+function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user: UserAccount) => void, expectedRole: AppRole, onAdminTrigger: () => void }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -657,27 +657,6 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, courierLocations }:
               <div className="bg-slate-900 p-6 rounded-3xl text-white">
                 <p className="text-3xl font-black">7/24</p>
                 <p className="text-xs font-bold uppercase tracking-wider opacity-80">Kesintisiz Hizmet</p>
-              </div>
-            </div>
-
-            {/* Live Map Section on Landing Page */}
-            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/20 overflow-hidden">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">Canlı Kurye Haritası</h3>
-                  <p className="text-sm text-slate-500">Antalya genelindeki aktif kuryelerimiz</p>
-                </div>
-                <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border border-emerald-100">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                  {courierLocations.length} Kurye Aktif
-                </div>
-              </div>
-              <div className="h-[300px] rounded-3xl overflow-hidden border border-slate-100 shadow-inner">
-                <LeafletMapComponent locations={courierLocations} />
-              </div>
-              <div className="mt-4 flex items-center gap-2 text-[10px] text-slate-400 italic">
-                <Navigation className="w-3 h-3" />
-                Kuryelerimiz Antalya'nın her noktasında hizmetinizdedir.
               </div>
             </div>
           </div>
@@ -1990,7 +1969,7 @@ export default function App() {
   };
 
   if (!user && role !== 'admin') {
-    return <AuthScreen courierLocations={allCourierLocations} expectedRole={role} onAdminTrigger={() => setRole('admin')} onLogin={(u) => {
+    return <AuthScreen expectedRole={role} onAdminTrigger={() => setRole('admin')} onLogin={(u) => {
       setUser(u);
       setRole(u.role);
     }} />;
