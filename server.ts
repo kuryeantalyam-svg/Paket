@@ -315,10 +315,14 @@ async function startServer() {
           db.prepare("INSERT OR REPLACE INTO courier_locations (courier_id, lat, lng, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)")
             .run(courierId, lat, lng);
           
-          // Broadcast location to all clients (or specific customer)
+          // Get courier name for broadcast
+          const courier = db.prepare("SELECT full_name FROM users WHERE id = ?").get(courierId) as { full_name: string } | undefined;
+          
+          // Broadcast location to all clients
           broadcast({
             type: "courier_location",
             courierId,
+            courierName: courier?.full_name || courierId,
             lat,
             lng,
             updated_at: new Date().toISOString()
@@ -570,7 +574,17 @@ async function startServer() {
     }
 
     const placeholders = onlineCourierIds.map(() => '?').join(',');
-    const couriers = db.prepare(`SELECT courier_id as courierId, lat, lng, updated_at FROM courier_locations WHERE courier_id IN (${placeholders})`).all(...onlineCourierIds);
+    const couriers = db.prepare(`
+      SELECT 
+        cl.courier_id as courierId, 
+        u.full_name as courierName,
+        cl.lat, 
+        cl.lng, 
+        cl.updated_at 
+      FROM courier_locations cl
+      LEFT JOIN users u ON cl.courier_id = u.id
+      WHERE cl.courier_id IN (${placeholders})
+    `).all(...onlineCourierIds);
     res.json(couriers);
   });
 

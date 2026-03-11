@@ -219,6 +219,7 @@ interface Order {
 
 interface CourierLocation {
   courierId: string;
+  courierName?: string;
   lat: number;
   lng: number;
   updated_at: string;
@@ -419,7 +420,7 @@ function LeafletMapComponent({
               <div className="p-2">
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                  <p className="font-bold text-indigo-600 text-xs">Kurye: {loc.courierId}</p>
+                  <p className="font-bold text-indigo-600 text-xs">Kurye: {loc.courierName || loc.courierId}</p>
                 </div>
                 <p className="text-[10px] text-slate-500">
                   {status ? (status === 'accepted' ? 'Alış adresine gidiyor' : 'Teslimat adresine gidiyor') : 'Aktif Kurye'}
@@ -2372,7 +2373,7 @@ export default function App() {
                             <User className="w-5 h-5" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold">{loc.courierId}</p>
+                            <p className="text-sm font-bold">{loc.courierName || loc.courierId}</p>
                             <p className="text-[10px] text-emerald-500 font-bold uppercase">Aktif</p>
                           </div>
                         </div>
