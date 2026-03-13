@@ -545,7 +545,7 @@ function CourierApplicationScreen({ onBack, onLogin }: { onBack: () => void, onL
             <p className="text-indigo-100 text-lg mb-8 leading-relaxed">
               Başka bir firmada çalışıyor olsanız bile, SmartPack üzerinden gelen ek taleplerle boş vakitlerinizi kazanca dönüştürebilirsiniz.
             </p>
-            <div className="space-y-4">
+            <div className="space-y-4 mb-8">
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -564,6 +564,19 @@ function CourierApplicationScreen({ onBack, onLogin }: { onBack: () => void, onL
                 </div>
                 <span className="font-bold">Ek İş Olarak Yapabilme</span>
               </div>
+            </div>
+
+            <div className="pt-8 border-t border-white/10">
+              <p className="text-sm text-indigo-100 mb-4">Sorularınız mı var? Hemen bize ulaşın:</p>
+              <a 
+                href="https://wa.me/905320000000" // Lütfen bu numarayı güncelleyin
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 px-8 rounded-2xl shadow-lg transition-all"
+              >
+                <MessageCircle className="w-6 h-6" />
+                WhatsApp ile Bilgi Al
+              </a>
             </div>
           </div>
           <div className="p-10 lg:p-16">
