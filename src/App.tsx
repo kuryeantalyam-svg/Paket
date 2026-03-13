@@ -541,7 +541,7 @@ function CourierApplicationScreen({ onBack, onLogin }: { onBack: () => void, onL
             <div className="bg-white/20 w-16 h-16 rounded-2xl flex items-center justify-center mb-8">
               <Bike className="w-10 h-10" />
             </div>
-            <h1 className="text-4xl font-black mb-6 leading-tight">Antalya'nın En Çok Kazandıran Kurye Ağına Katıl!</h1>
+            <h1 className="text-4xl font-black mb-6 leading-tight">Antalya'nın Kurye Ağına Katıl!</h1>
             <p className="text-indigo-100 text-lg mb-8 leading-relaxed">
               Başka bir firmada çalışıyor olsanız bile, SmartPack üzerinden gelen ek taleplerle boş vakitlerinizi kazanca dönüştürebilirsiniz.
             </p>
