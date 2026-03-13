@@ -497,7 +497,80 @@ function LeafletMapComponent({
   );
 }
 
-function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user: UserAccount) => void, expectedRole: AppRole, onAdminTrigger: () => void }) {
+function CourierApplicationScreen({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-4xl w-full bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-200"
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-2">
+          <div className="p-10 lg:p-16 bg-indigo-600 text-white flex flex-col justify-center">
+            <div className="bg-white/20 w-16 h-16 rounded-2xl flex items-center justify-center mb-8">
+              <Bike className="w-10 h-10" />
+            </div>
+            <h1 className="text-4xl font-black mb-6 leading-tight">Antalya'nın En Çok Kazandıran Kurye Ağına Katıl!</h1>
+            <p className="text-indigo-100 text-lg mb-8 leading-relaxed">
+              Başka bir firmada çalışıyor olsanız bile, SmartPack üzerinden gelen ek taleplerle boş vakitlerinizi kazanca dönüştürebilirsiniz.
+            </p>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                </div>
+                <span className="font-bold">Esnek Çalışma Saatleri</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                </div>
+                <span className="font-bold">Anında Ödeme İmkanı</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                </div>
+                <span className="font-bold">Ek İş Olarak Yapabilme</span>
+              </div>
+            </div>
+          </div>
+          <div className="p-10 lg:p-16">
+            <h2 className="text-2xl font-bold mb-2">Hemen Başvur</h2>
+            <p className="text-slate-500 text-sm mb-8">Bilgilerinizi doldurun, ekibimiz sizinle iletişime geçsin.</p>
+            
+            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert('Başvurunuz alındı! En kısa sürede size döneceğiz.'); onBack(); }}>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Ad Soyad</label>
+                <input type="text" required className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="Ahmet Yılmaz" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Telefon</label>
+                <input type="tel" required className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="05XX XXX XX XX" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Araç Tipi</label>
+                <select className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                  <option>Motosiklet</option>
+                  <option>Araba</option>
+                  <option>Panelvan</option>
+                </select>
+              </div>
+              <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all mt-4">
+                Başvuruyu Gönder
+              </button>
+              <button type="button" onClick={onBack} className="w-full text-slate-400 text-sm font-bold hover:text-slate-600 transition-colors">
+                Geri Dön
+              </button>
+            </form>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplication }: { onLogin: (user: UserAccount) => void, expectedRole: AppRole, onAdminTrigger: () => void, onCourierApplication: () => void }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -848,12 +921,18 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger }: { onLogin: (user:
                 </button>
               </form>
 
-              <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+              <div className="mt-8 pt-6 border-t border-slate-100 text-center space-y-4">
                 <button 
                   onClick={() => setIsLogin(!isLogin)}
-                  className="text-sm font-bold text-indigo-600 hover:text-indigo-700"
+                  className="text-sm font-bold text-indigo-600 hover:text-indigo-700 block w-full"
                 >
                   {isLogin ? 'Hesabınız yok mu? Kayıt olun' : 'Zaten hesabınız var mı? Giriş yapın'}
+                </button>
+                <button 
+                  onClick={onCourierApplication}
+                  className="text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors"
+                >
+                  Kurye Olmak mı İstiyorsunuz? Başvuru Yapın
                 </button>
               </div>
             </motion.div>
@@ -1241,12 +1320,17 @@ export default function App() {
   });
   const activeOrderRef = useRef<Order | null>(null);
 
+  const [isCourierApplicationPage, setIsCourierApplicationPage] = useState(false);
+
   // URL Path Handling for SEO and Deep Linking
   useEffect(() => {
     const path = window.location.pathname;
     let title = "SmartPack - Antalya Kurye Çağır | Paket Gönder";
     
-    if (path === '/kurye-basvurusu') {
+    if (path === '/kuryebasvuru') {
+      setIsCourierApplicationPage(true);
+      title = "Kurye Başvurusu - SmartPack Antalya";
+    } else if (path === '/kurye-basvurusu') {
       setRole('courier');
       title = "Kurye Başvurusu - SmartPack Antalya";
     } else if (path === '/musteri-girisi') {
@@ -1969,11 +2053,26 @@ export default function App() {
     window.open(url, '_blank');
   };
 
-  if (!user && role !== 'admin') {
-    return <AuthScreen expectedRole={role} onAdminTrigger={() => setRole('admin')} onLogin={(u) => {
-      setUser(u);
-      setRole(u.role);
+  if (isCourierApplicationPage) {
+    return <CourierApplicationScreen onBack={() => {
+      setIsCourierApplicationPage(false);
+      window.history.pushState({}, '', '/');
     }} />;
+  }
+
+  if (!user && role !== 'admin') {
+    return <AuthScreen 
+      expectedRole={role} 
+      onAdminTrigger={() => setRole('admin')} 
+      onCourierApplication={() => {
+        setIsCourierApplicationPage(true);
+        window.history.pushState({}, '', '/kuryebasvuru');
+      }}
+      onLogin={(u) => {
+        setUser(u);
+        setRole(u.role);
+      }} 
+    />;
   }
 
   return (
