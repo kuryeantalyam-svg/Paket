@@ -497,7 +497,38 @@ function LeafletMapComponent({
   );
 }
 
-function CourierApplicationScreen({ onBack }: { onBack: () => void }) {
+function CourierApplicationScreen({ onBack, onLogin }: { onBack: () => void, onLogin: (user: UserAccount) => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [error, setError] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch(API_BASE_URL + '/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role: 'courier', fullName, phone })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        onLogin(data);
+      } else {
+        setError(data.error || 'Bir hata oluştu');
+      }
+    } catch (err) {
+      setError('Sunucuya bağlanılamadı');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
       <motion.div 
@@ -536,28 +567,80 @@ function CourierApplicationScreen({ onBack }: { onBack: () => void }) {
             </div>
           </div>
           <div className="p-10 lg:p-16">
-            <h2 className="text-2xl font-bold mb-2">Hemen Başvur</h2>
-            <p className="text-slate-500 text-sm mb-8">Bilgilerinizi doldurun, ekibimiz sizinle iletişime geçsin.</p>
+            <h2 className="text-2xl font-bold mb-6">Hemen Başvur</h2>
             
-            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert('Başvurunuz alındı! En kısa sürede size döneceğiz.'); onBack(); }}>
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Ad Soyad</label>
-                <input type="text" required className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="Ahmet Yılmaz" />
+                <input 
+                  type="text" 
+                  required 
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
+                  placeholder="Ahmet Yılmaz" 
+                />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Telefon</label>
-                <input type="tel" required className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="05XX XXX XX XX" />
+                <input 
+                  type="tel" 
+                  required 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
+                  placeholder="05XX XXX XX XX" 
+                />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Araç Tipi</label>
-                <select className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
-                  <option>Motosiklet</option>
-                  <option>Araba</option>
-                  <option>Panelvan</option>
-                </select>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">E-posta</label>
+                <input 
+                  type="email" 
+                  required 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
+                  placeholder="ornek@mail.com" 
+                />
               </div>
-              <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all mt-4">
-                Başvuruyu Gönder
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Şifre</label>
+                <input 
+                  type="password" 
+                  required 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
+                  placeholder="••••••••" 
+                />
+              </div>
+
+              <div className="pt-2">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input 
+                    type="checkbox" 
+                    required
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all"
+                  />
+                  <span className="text-xs text-slate-500 leading-relaxed group-hover:text-slate-700 transition-colors">
+                    Bağımsız Hizmet Sağlayıcı Sözleşmesi ve KVKK Aydınlatma Metni'ni okudum, onaylıyorum.
+                  </span>
+                </label>
+              </div>
+
+              {error && <p className="text-rose-500 text-xs font-bold text-center">{error}</p>}
+
+              <button 
+                type="submit" 
+                disabled={loading || !agreedToTerms}
+                className={cn(
+                  "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all mt-4 flex items-center justify-center gap-2",
+                  (loading || !agreedToTerms) && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Hemen Kayıt Ol'}
               </button>
               <button type="button" onClick={onBack} className="w-full text-slate-400 text-sm font-bold hover:text-slate-600 transition-colors">
                 Geri Dön
@@ -2054,10 +2137,18 @@ export default function App() {
   };
 
   if (isCourierApplicationPage) {
-    return <CourierApplicationScreen onBack={() => {
-      setIsCourierApplicationPage(false);
-      window.history.pushState({}, '', '/');
-    }} />;
+    return <CourierApplicationScreen 
+      onBack={() => {
+        setIsCourierApplicationPage(false);
+        window.history.pushState({}, '', '/');
+      }} 
+      onLogin={(u) => {
+        setUser(u);
+        setRole(u.role);
+        setIsCourierApplicationPage(false);
+        window.history.pushState({}, '', '/');
+      }}
+    />;
   }
 
   if (!user && role !== 'admin') {
