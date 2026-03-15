@@ -260,10 +260,15 @@ function MapController({ center, zoom }: { center: [number, number], zoom?: numb
 
 async function geocode(address: string) {
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ", Antalya")}`);
+    // Nominatim search with addressdetails to get structured data
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ", Antalya")}&addressdetails=1&limit=1`);
     const data = await res.json();
     if (data && data.length > 0) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      return { 
+        lat: parseFloat(data[0].lat), 
+        lng: parseFloat(data[0].lon),
+        displayName: data[0].display_name
+      };
     }
   } catch (e) {
     console.error("Geocoding error:", e);
@@ -273,9 +278,29 @@ async function geocode(address: string) {
 
 async function reverseGeocode(lat: number, lng: number) {
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+    // zoom=18 for house number precision
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
     const data = await res.json();
-    if (data && data.display_name) {
+    if (data) {
+      const addr = data.address;
+      if (addr) {
+        const parts = [];
+        // Turkish address format: Road/Street, House Number, Neighbourhood, District, City
+        if (addr.road) parts.push(addr.road);
+        if (addr.house_number) {
+          parts.push(`No: ${addr.house_number}`);
+        } else if (addr.house_name) {
+          parts.push(addr.house_name);
+        }
+        
+        if (addr.suburb) parts.push(addr.suburb);
+        if (addr.neighbourhood && addr.neighbourhood !== addr.suburb) parts.push(addr.neighbourhood);
+        if (addr.town || addr.city || addr.district) parts.push(addr.town || addr.city || addr.district);
+        
+        if (parts.length > 0) {
+          return parts.join(', ');
+        }
+      }
       return data.display_name;
     }
   } catch (e) {
@@ -346,7 +371,9 @@ function AddressPickerMap({
   useEffect(() => {
     if (initialCoords) {
       setMarker(initialCoords);
-      map.setView([initialCoords.lat, initialCoords.lng], 15);
+      map.flyTo([initialCoords.lat, initialCoords.lng], 16, {
+        duration: 1.5
+      });
     }
   }, [initialCoords, map]);
 
@@ -1550,6 +1577,7 @@ export default function App() {
   const [pickupCoords, setPickupCoords] = useState<{ lat: number, lng: number } | null>(null);
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number, lng: number } | null>(null);
   const [activePickingField, setActivePickingField] = useState<'pickup' | 'delivery' | null>(null);
+  const lastMapAddressRef = useRef<{ pickup: string, delivery: string }>({ pickup: '', delivery: '' });
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [packageType, setPackageType] = useState('Dosya / Evrak');
@@ -1570,24 +1598,24 @@ export default function App() {
   // Debounced geocoding for pickup address
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (pickup && pickup.length > 5 && activePickingField !== 'pickup') {
+      if (pickup && pickup.length > 5 && pickup !== lastMapAddressRef.current.pickup) {
         const coords = await geocode(pickup);
         if (coords) setPickupCoords(coords);
       }
-    }, 1500);
+    }, 1200);
     return () => clearTimeout(timer);
-  }, [pickup, activePickingField]);
+  }, [pickup]);
 
   // Debounced geocoding for delivery address
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (delivery && delivery.length > 5 && activePickingField !== 'delivery') {
+      if (delivery && delivery.length > 5 && delivery !== lastMapAddressRef.current.delivery) {
         const coords = await geocode(delivery);
         if (coords) setDeliveryCoords(coords);
       }
-    }, 1500);
+    }, 1200);
     return () => clearTimeout(timer);
-  }, [delivery, activePickingField]);
+  }, [delivery]);
 
   const [saveAddressChecked, setSaveAddressChecked] = useState({ pickup: false, delivery: false });
   const [addressTitle, setAddressTitle] = useState({ pickup: '', delivery: '' });
@@ -2794,6 +2822,7 @@ export default function App() {
                                 rows={3}
                                 value={pickup}
                                 onChange={e => setPickup(e.target.value)}
+                                onFocus={() => setActivePickingField('pickup')}
                                 placeholder="Paketin alınacağı tam adresi giriniz..."
                                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
                               />
@@ -2853,6 +2882,7 @@ export default function App() {
                                 rows={3}
                                 value={delivery}
                                 onChange={e => setDelivery(e.target.value)}
+                                onFocus={() => setActivePickingField('delivery')}
                                 placeholder="Paketin teslim edileceği tam adresi giriniz..."
                                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
                               />
@@ -2916,9 +2946,11 @@ export default function App() {
                                     initialCoords={activePickingField === 'pickup' ? pickupCoords : deliveryCoords}
                                     onLocationSelect={(lat, lng, address) => {
                                       if (activePickingField === 'pickup') {
+                                        lastMapAddressRef.current.pickup = address;
                                         setPickup(address);
                                         setPickupCoords({ lat, lng });
                                       } else {
+                                        lastMapAddressRef.current.delivery = address;
                                         setDelivery(address);
                                         setDeliveryCoords({ lat, lng });
                                       }
