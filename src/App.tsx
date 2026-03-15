@@ -566,18 +566,7 @@ function CourierApplicationScreen({ onBack, onLogin }: { onBack: () => void, onL
               </div>
             </div>
 
-            <div className="pt-8 border-t border-white/10">
-              <p className="text-sm text-indigo-100 mb-4">Sorularınız mı var? Hemen bize ulaşın:</p>
-              <a 
-                href="https://wa.me/905320000000" // Lütfen bu numarayı güncelleyin
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 px-8 rounded-2xl shadow-lg transition-all"
-              >
-                <MessageCircle className="w-6 h-6" />
-                WhatsApp ile Bilgi Al
-              </a>
-            </div>
+
           </div>
           <div className="p-10 lg:p-16">
             <h2 className="text-2xl font-bold mb-6">Hemen Başvur</h2>
