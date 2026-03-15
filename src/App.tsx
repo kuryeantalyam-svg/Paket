@@ -379,29 +379,29 @@ function RecenterMap({ center }: { center: [number, number] }) {
 const PickupMarkerIcon = L.divIcon({
   className: 'custom-div-icon',
   html: `<div class="relative">
-           <div class="w-8 h-8 bg-blue-600 rounded-full shadow-lg border-2 border-white flex items-center justify-center">
-             <div class="text-white">
-               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+           <div class="w-10 h-10 bg-blue-600 rounded-2xl shadow-xl border-2 border-white flex items-center justify-center transform -rotate-45">
+             <div class="text-white transform rotate-45">
+               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
              </div>
            </div>
-           <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded uppercase whitespace-nowrap">Alış</div>
+           <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-lg uppercase whitespace-nowrap border border-white/20">Alış Noktası</div>
          </div>`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
 });
 
 const DeliveryMarkerIcon = L.divIcon({
   className: 'custom-div-icon',
   html: `<div class="relative">
-           <div class="w-8 h-8 bg-rose-600 rounded-full shadow-lg border-2 border-white flex items-center justify-center">
-             <div class="text-white">
-               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+           <div class="w-10 h-10 bg-rose-600 rounded-2xl shadow-xl border-2 border-white flex items-center justify-center transform -rotate-45">
+             <div class="text-white transform rotate-45">
+               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
              </div>
            </div>
-           <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-rose-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded uppercase whitespace-nowrap">Teslim</div>
+           <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-lg uppercase whitespace-nowrap border border-white/20">Teslim Noktası</div>
          </div>`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
 });
 
 function AddressPickerMap({ 
@@ -2998,8 +2998,8 @@ export default function App() {
                                   style={{ height: '100%', width: '100%' }}
                                 >
                                   <TileLayer
-                                    url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
-                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                                   />
                                   <AddressPickerMap 
                                     pickupCoords={pickupCoords}
