@@ -395,21 +395,25 @@ function LeafletMapComponent({
         {/* Polyline to destination */}
         {location && (status === 'accepted' || status === 'picked_up') && (
           <>
-            <Polyline 
-              positions={[
-                [location.lat, location.lng],
-                status === 'accepted' ? [pickupCoords!.lat, pickupCoords!.lng] : [deliveryCoords!.lat, deliveryCoords!.lng]
-              ]}
-              color="#4f46e5"
-              weight={3}
-              dashArray="10, 10"
-              opacity={0.6}
-            />
-            <Circle 
-              center={status === 'accepted' ? [pickupCoords!.lat, pickupCoords!.lng] : [deliveryCoords!.lat, deliveryCoords!.lng]}
-              radius={100}
-              pathOptions={{ color: '#4f46e5', fillColor: '#4f46e5', fillOpacity: 0.1 }}
-            />
+            {((status === 'accepted' && pickupCoords) || (status === 'picked_up' && deliveryCoords)) && (
+              <>
+                <Polyline 
+                  positions={[
+                    [location.lat, location.lng],
+                    status === 'accepted' ? [pickupCoords!.lat, pickupCoords!.lng] : [deliveryCoords!.lat, deliveryCoords!.lng]
+                  ]}
+                  color="#4f46e5"
+                  weight={3}
+                  dashArray="10, 10"
+                  opacity={0.6}
+                />
+                <Circle 
+                  center={status === 'accepted' ? [pickupCoords!.lat, pickupCoords!.lng] : [deliveryCoords!.lat, deliveryCoords!.lng]}
+                  radius={100}
+                  pathOptions={{ color: '#4f46e5', fillColor: '#4f46e5', fillOpacity: 0.1 }}
+                />
+              </>
+            )}
           </>
         )}
 
@@ -1698,61 +1702,69 @@ export default function App() {
     socket.onclose = () => setSocketConnected(false);
 
     socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'notification') {
-        alert(`Sistem Bildirimi: ${data.message}`);
-        playNotificationSound();
-      } else if (data.type === 'new_order') {
-        setOrders(prev => {
-          const exists = prev.some(o => o.id === data.order.id);
-          if (exists) {
-            return prev.map(o => o.id === data.order.id ? data.order : o);
-          }
-          return [data.order, ...prev];
-        });
+      try {
+        const data = JSON.parse(event.data);
+        if (!data || !data.type) return;
 
-        if (role === 'courier') {
+        if (data.type === 'notification') {
+          alert(`Sistem Bildirimi: ${data.message}`);
           playNotificationSound();
-        }
-      } else if (data.type === 'courier_location') {
-        setAllCourierLocations(prev => {
-          const exists = prev.some(l => l.courierId === data.courierId);
-          if (exists) {
-            return prev.map(l => l.courierId === data.courierId ? data : l);
-          }
-          return [...prev, data];
-        });
+        } else if (data.type === 'new_order') {
+          setOrders(prev => {
+            const exists = prev.some(o => o.id === data.order.id);
+            if (exists) {
+              return prev.map(o => o.id === data.order.id ? data.order : o);
+            }
+            return [data.order, ...prev];
+          });
 
-        const currentOrder = activeOrderRef.current;
-        const isAssignedCourier = currentOrder?.courier_id === data.courierId;
-        const isPendingOrder = currentOrder?.status === 'pending';
-        
-        if (isAssignedCourier || (isPendingOrder && !currentOrder?.courier_id)) {
-          setCourierLocation(data);
-        }
-      } else if (data.type === 'courier_offline') {
-        setAllCourierLocations(prev => prev.filter(l => l.courierId !== data.courierId));
-        if (courierLocation?.courierId === data.courierId) {
-          setCourierLocation(null);
-        }
-      } else if (data.type === 'order_updated') {
-        setOrders(prev => prev.map(o => o.id === data.orderId ? { ...o, status: data.status, courier_id: data.courierId } : o));
-        
-        if (role === 'courier') {
-          if (data.status === 'cancelled') {
+          if (role === 'courier') {
             playNotificationSound();
           }
-        }
-
-        setActiveOrder(prev => {
-          if (prev?.id === data.orderId) {
-            if (data.status === 'delivered' || data.status === 'cancelled') {
-              return null;
+        } else if (data.type === 'courier_location') {
+          setAllCourierLocations(prev => {
+            const exists = prev.some(l => l.courierId === data.courierId);
+            if (exists) {
+              return prev.map(l => l.courierId === data.courierId ? data : l);
             }
-            return { ...prev, status: data.status, courier_id: data.courierId };
+            return [...prev, data];
+          });
+
+          const currentOrder = activeOrderRef.current;
+          const isAssignedCourier = currentOrder?.courier_id === data.courierId;
+          const isPendingOrder = currentOrder?.status === 'pending';
+          
+          if (isAssignedCourier || (isPendingOrder && !currentOrder?.courier_id)) {
+            setCourierLocation(data);
           }
-          return prev;
-        });
+        } else if (data.type === 'courier_offline') {
+          setAllCourierLocations(prev => prev.filter(l => l.courierId !== data.courierId));
+          if (courierLocation?.courierId === data.courierId) {
+            setCourierLocation(null);
+          }
+        } else if (data.type === 'order_updated') {
+          if (!data.orderId) return;
+
+          setOrders(prev => prev.map(o => o.id === data.orderId ? { ...o, status: data.status, courier_id: data.courierId } : o));
+          
+          if (role === 'courier') {
+            if (data.status === 'cancelled') {
+              playNotificationSound();
+            }
+          }
+
+          setActiveOrder(prev => {
+            if (prev?.id === data.orderId) {
+              if (data.status === 'delivered' || data.status === 'cancelled') {
+                return null;
+              }
+              return { ...prev, status: data.status, courier_id: data.courierId };
+            }
+            return prev;
+          });
+        }
+      } catch (error) {
+        console.error("WebSocket message handling error:", error);
       }
     };
 
