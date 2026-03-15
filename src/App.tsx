@@ -42,7 +42,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Capacitor } from '@capacitor/core';
-import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { cn } from './lib/utils';
@@ -271,6 +271,19 @@ async function geocode(address: string) {
   return null;
 }
 
+async function reverseGeocode(lat: number, lng: number) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+    const data = await res.json();
+    if (data && data.display_name) {
+      return data.display_name;
+    }
+  } catch (e) {
+    console.error("Reverse geocoding error:", e);
+  }
+  return null;
+}
+
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; // Radius of the earth in km
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -318,6 +331,43 @@ function RecenterMap({ center }: { center: [number, number] }) {
     map.setView(center);
   }, [center, map]);
   return null;
+}
+
+function AddressPickerMap({ 
+  onLocationSelect, 
+  initialCoords 
+}: { 
+  onLocationSelect: (lat: number, lng: number, address: string) => void,
+  initialCoords?: { lat: number, lng: number } | null
+}) {
+  const [marker, setMarker] = useState<{ lat: number, lng: number } | null>(initialCoords || null);
+  const map = useMap();
+
+  useEffect(() => {
+    if (initialCoords) {
+      setMarker(initialCoords);
+      map.setView([initialCoords.lat, initialCoords.lng], 15);
+    }
+  }, [initialCoords, map]);
+
+  useMapEvents({
+    click: async (e) => {
+      const { lat, lng } = e.latlng;
+      setMarker({ lat, lng });
+      const address = await reverseGeocode(lat, lng);
+      if (address) {
+        onLocationSelect(lat, lng, address);
+      }
+    },
+  });
+
+  return (
+    <>
+      {marker && (
+        <Marker position={[marker.lat, marker.lng]} />
+      )}
+    </>
+  );
 }
 
 function LeafletMapComponent({ 
@@ -1497,6 +1547,9 @@ export default function App() {
 
   const [pickup, setPickup] = useState('');
   const [delivery, setDelivery] = useState('');
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number, lng: number } | null>(null);
+  const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number, lng: number } | null>(null);
+  const [activePickingField, setActivePickingField] = useState<'pickup' | 'delivery' | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [packageType, setPackageType] = useState('Dosya / Evrak');
@@ -1513,6 +1566,29 @@ export default function App() {
   const [showStatusAnim, setShowStatusAnim] = useState(false);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [showSavedAddressesModal, setShowSavedAddressesModal] = useState<{ show: boolean, target: 'pickup' | 'delivery' }>({ show: false, target: 'pickup' });
+
+  // Debounced geocoding for pickup address
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (pickup && pickup.length > 5 && activePickingField !== 'pickup') {
+        const coords = await geocode(pickup);
+        if (coords) setPickupCoords(coords);
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [pickup, activePickingField]);
+
+  // Debounced geocoding for delivery address
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (delivery && delivery.length > 5 && activePickingField !== 'delivery') {
+        const coords = await geocode(delivery);
+        if (coords) setDeliveryCoords(coords);
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [delivery, activePickingField]);
+
   const [saveAddressChecked, setSaveAddressChecked] = useState({ pickup: false, delivery: false });
   const [addressTitle, setAddressTitle] = useState({ pickup: '', delivery: '' });
   const watchIdRef = useRef<number | null>(null);
@@ -1949,8 +2025,11 @@ export default function App() {
     e.preventDefault();
     setIsCreatingOrder(true);
     try {
-      const pCoords = await geocode(pickup);
-      const dCoords = await geocode(delivery);
+      const pCoords = pickupCoords || await geocode(pickup);
+      const dCoords = deliveryCoords || await geocode(delivery);
+      
+      if (pCoords) setPickupCoords(pCoords);
+      if (dCoords) setDeliveryCoords(dCoords);
       
       let dist = 0;
       if (pCoords && dCoords) {
@@ -1983,9 +2062,9 @@ export default function App() {
       // Use the distance generated when showing the price modal
       const mockDistance = currentDistance;
 
-      // Geocode addresses (already done in handleCreateOrder, but we need them again or we could store them)
-      const pickupCoords = await geocode(pickup);
-      const deliveryCoords = await geocode(delivery);
+      // Use existing coords or geocode
+      const pCoords = pickupCoords || await geocode(pickup);
+      const dCoords = deliveryCoords || await geocode(delivery);
 
       console.log("Creating order with data:", { 
         customerName, 
@@ -1998,10 +2077,10 @@ export default function App() {
         packageType,
         specialRequest,
         distance: mockDistance,
-        pickup_lat: pickupCoords?.lat,
-        pickup_lng: pickupCoords?.lng,
-        delivery_lat: deliveryCoords?.lat,
-        delivery_lng: deliveryCoords?.lng
+        pickup_lat: pCoords?.lat,
+        pickup_lng: pCoords?.lng,
+        delivery_lat: dCoords?.lat,
+        delivery_lng: dCoords?.lng
       });
 
       const res = await fetch(API_BASE_URL + '/api/orders', {
@@ -2018,10 +2097,10 @@ export default function App() {
           packageType,
           specialRequest,
           distance: mockDistance,
-          pickup_lat: pickupCoords?.lat,
-          pickup_lng: pickupCoords?.lng,
-          delivery_lat: deliveryCoords?.lat,
-          delivery_lng: deliveryCoords?.lng
+          pickup_lat: pCoords?.lat,
+          pickup_lng: pCoords?.lng,
+          delivery_lat: dCoords?.lat,
+          delivery_lng: dCoords?.lng
         })
       });
       
@@ -2684,16 +2763,29 @@ export default function App() {
                           <div>
                             <div className="flex items-center justify-between mb-2 ml-1">
                               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Alış Adresi</label>
-                              {savedAddresses.length > 0 && (
+                              <div className="flex items-center gap-3">
                                 <button 
                                   type="button"
-                                  onClick={() => setShowSavedAddressesModal({ show: true, target: 'pickup' })}
-                                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider flex items-center gap-1"
+                                  onClick={() => setActivePickingField(activePickingField === 'pickup' ? null : 'pickup')}
+                                  className={cn(
+                                    "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors",
+                                    activePickingField === 'pickup' ? "text-emerald-600" : "text-slate-400 hover:text-emerald-600"
+                                  )}
                                 >
-                                  <History className="w-3 h-3" />
-                                  Kayıtlı Adreslerim
+                                  <Navigation className="w-3 h-3" />
+                                  Haritada Seç
                                 </button>
-                              )}
+                                {savedAddresses.length > 0 && (
+                                  <button 
+                                    type="button"
+                                    onClick={() => setShowSavedAddressesModal({ show: true, target: 'pickup' })}
+                                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider flex items-center gap-1"
+                                  >
+                                    <History className="w-3 h-3" />
+                                    Kayıtlı Adreslerim
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             <div className="relative">
                               <MapPin className="absolute left-4 top-4 w-5 h-5 text-emerald-500" />
@@ -2730,16 +2822,29 @@ export default function App() {
                           <div>
                             <div className="flex items-center justify-between mb-2 ml-1">
                               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Teslim Adresi</label>
-                              {savedAddresses.length > 0 && (
+                              <div className="flex items-center gap-3">
                                 <button 
                                   type="button"
-                                  onClick={() => setShowSavedAddressesModal({ show: true, target: 'delivery' })}
-                                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider flex items-center gap-1"
+                                  onClick={() => setActivePickingField(activePickingField === 'delivery' ? null : 'delivery')}
+                                  className={cn(
+                                    "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors",
+                                    activePickingField === 'delivery' ? "text-rose-600" : "text-slate-400 hover:text-rose-600"
+                                  )}
                                 >
-                                  <History className="w-3 h-3" />
-                                  Kayıtlı Adreslerim
+                                  <Navigation className="w-3 h-3" />
+                                  Haritada Seç
                                 </button>
-                              )}
+                                {savedAddresses.length > 0 && (
+                                  <button 
+                                    type="button"
+                                    onClick={() => setShowSavedAddressesModal({ show: true, target: 'delivery' })}
+                                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider flex items-center gap-1"
+                                  >
+                                    <History className="w-3 h-3" />
+                                    Kayıtlı Adreslerim
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             <div className="relative">
                               <MapPinned className="absolute left-4 top-4 w-5 h-5 text-rose-500" />
@@ -2772,6 +2877,62 @@ export default function App() {
                               )}
                             </div>
                           </div>
+
+                          {activePickingField && (
+                            <motion.div 
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-lg"
+                            >
+                              <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className={cn(
+                                    "w-2 h-2 rounded-full animate-pulse",
+                                    activePickingField === 'pickup' ? "bg-emerald-500" : "bg-rose-500"
+                                  )}></div>
+                                  <span className="text-xs font-bold uppercase tracking-widest text-slate-600">
+                                    {activePickingField === 'pickup' ? 'Alış Konumu Seç' : 'Teslim Konumu Seç'}
+                                  </span>
+                                </div>
+                                <button 
+                                  type="button"
+                                  onClick={() => setActivePickingField(null)}
+                                  className="p-1 hover:bg-white rounded-lg transition-colors text-slate-400"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <div className="h-[350px] relative">
+                                <MapContainer 
+                                  center={ANTALYA_COORDS} 
+                                  zoom={13} 
+                                  style={{ height: '100%', width: '100%' }}
+                                >
+                                  <TileLayer
+                                    url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
+                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                  />
+                                  <AddressPickerMap 
+                                    initialCoords={activePickingField === 'pickup' ? pickupCoords : deliveryCoords}
+                                    onLocationSelect={(lat, lng, address) => {
+                                      if (activePickingField === 'pickup') {
+                                        setPickup(address);
+                                        setPickupCoords({ lat, lng });
+                                      } else {
+                                        setDelivery(address);
+                                        setDeliveryCoords({ lat, lng });
+                                      }
+                                    }}
+                                  />
+                                </MapContainer>
+                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none">
+                                  <div className="bg-slate-900/80 backdrop-blur-sm text-white px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-xl border border-white/10">
+                                    Haritaya tıklayarak konumu belirleyin
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
                           <div>
                             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 ml-1">Araç Tipi</label>
                             <div className="grid grid-cols-3 gap-4">
