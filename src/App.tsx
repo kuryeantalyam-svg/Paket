@@ -260,14 +260,32 @@ function MapController({ center, zoom }: { center: [number, number], zoom?: numb
 
 async function geocode(address: string) {
   try {
+    const allowedDistricts = ['Konyaaltı', 'Muratpaşa', 'Kepez', 'Döşemealtı'];
     // Nominatim search with addressdetails to get structured data
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ", Antalya")}&addressdetails=1&limit=1`);
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ", Antalya")}&addressdetails=1&limit=5`);
     const data = await res.json();
+    
     if (data && data.length > 0) {
+      // Filter results to only include allowed districts in Antalya
+      const filtered = data.filter((item: any) => {
+        const addr = item.address;
+        const district = addr.town || addr.city_district || addr.suburb || addr.district || '';
+        const city = addr.province || addr.city || '';
+        
+        const isAntalya = city.toLocaleLowerCase('tr-TR').includes('antalya');
+        const isAllowedDistrict = allowedDistricts.some(d => 
+          district.toLocaleLowerCase('tr-TR').includes(d.toLocaleLowerCase('tr-TR'))
+        );
+        
+        return isAntalya && isAllowedDistrict;
+      });
+
+      const result = filtered.length > 0 ? filtered[0] : data[0];
+
       return { 
-        lat: parseFloat(data[0].lat), 
-        lng: parseFloat(data[0].lon),
-        displayName: data[0].display_name
+        lat: parseFloat(result.lat), 
+        lng: parseFloat(result.lon),
+        displayName: result.display_name
       };
     }
   } catch (e) {
@@ -358,29 +376,63 @@ function RecenterMap({ center }: { center: [number, number] }) {
   return null;
 }
 
+const PickupMarkerIcon = L.divIcon({
+  className: 'custom-div-icon',
+  html: `<div class="relative">
+           <div class="w-8 h-8 bg-blue-600 rounded-full shadow-lg border-2 border-white flex items-center justify-center">
+             <div class="text-white">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+             </div>
+           </div>
+           <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded uppercase whitespace-nowrap">Alış</div>
+         </div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
+const DeliveryMarkerIcon = L.divIcon({
+  className: 'custom-div-icon',
+  html: `<div class="relative">
+           <div class="w-8 h-8 bg-rose-600 rounded-full shadow-lg border-2 border-white flex items-center justify-center">
+             <div class="text-white">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+             </div>
+           </div>
+           <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-rose-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded uppercase whitespace-nowrap">Teslim</div>
+         </div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
 function AddressPickerMap({ 
   onLocationSelect, 
-  initialCoords 
+  pickupCoords,
+  deliveryCoords,
+  activeField
 }: { 
   onLocationSelect: (lat: number, lng: number, address: string) => void,
-  initialCoords?: { lat: number, lng: number } | null
+  pickupCoords?: { lat: number, lng: number } | null,
+  deliveryCoords?: { lat: number, lng: number } | null,
+  activeField: 'pickup' | 'delivery'
 }) {
-  const [marker, setMarker] = useState<{ lat: number, lng: number } | null>(initialCoords || null);
   const map = useMap();
 
   useEffect(() => {
-    if (initialCoords) {
-      setMarker(initialCoords);
-      map.flyTo([initialCoords.lat, initialCoords.lng], 16, {
-        duration: 1.5
-      });
+    const activeCoords = activeField === 'pickup' ? pickupCoords : deliveryCoords;
+    if (activeCoords) {
+      map.flyTo([activeCoords.lat, activeCoords.lng], 16, { duration: 1.5 });
+    } else if (pickupCoords && deliveryCoords) {
+      const bounds = L.latLngBounds([
+        [pickupCoords.lat, pickupCoords.lng],
+        [deliveryCoords.lat, deliveryCoords.lng]
+      ]);
+      map.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [initialCoords, map]);
+  }, [activeField, pickupCoords, deliveryCoords, map]);
 
   useMapEvents({
     click: async (e) => {
       const { lat, lng } = e.latlng;
-      setMarker({ lat, lng });
       const address = await reverseGeocode(lat, lng);
       if (address) {
         onLocationSelect(lat, lng, address);
@@ -390,8 +442,15 @@ function AddressPickerMap({
 
   return (
     <>
-      {marker && (
-        <Marker position={[marker.lat, marker.lng]} />
+      {pickupCoords && (
+        <Marker position={[pickupCoords.lat, pickupCoords.lng]} icon={PickupMarkerIcon}>
+          <Popup>Alış Adresi</Popup>
+        </Marker>
+      )}
+      {deliveryCoords && (
+        <Marker position={[deliveryCoords.lat, deliveryCoords.lng]} icon={DeliveryMarkerIcon}>
+          <Popup>Teslim Adresi</Popup>
+        </Marker>
       )}
     </>
   );
@@ -2943,7 +3002,9 @@ export default function App() {
                                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                                   />
                                   <AddressPickerMap 
-                                    initialCoords={activePickingField === 'pickup' ? pickupCoords : deliveryCoords}
+                                    pickupCoords={pickupCoords}
+                                    deliveryCoords={deliveryCoords}
+                                    activeField={activePickingField}
                                     onLocationSelect={(lat, lng, address) => {
                                       if (activePickingField === 'pickup') {
                                         lastMapAddressRef.current.pickup = address;
