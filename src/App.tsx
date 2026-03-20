@@ -38,7 +38,9 @@ import {
   ExternalLink,
   Instagram,
   Facebook,
-  Twitter
+  Twitter,
+  Utensils,
+  FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Capacitor } from '@capacitor/core';
@@ -89,112 +91,6 @@ const getVehicleInfo = (type: VehicleType) => {
     case 'van': return { icon: Truck, label: 'Panelvan' };
     default: return { icon: Bike, label: 'Motosiklet' };
   }
-};
-
-const StickManAnimation = () => {
-  const [messageIndex, setMessageIndex] = useState(0);
-  const messages = [
-    "Bir yere dosya mı göndermek istiyorsun?",
-    "Veterinerden alınacak bir evcil hayvanın mı var?",
-    "Ev eşyası taşımak için panelvan araca mı ihtiyacın var?",
-    "İşletmene acil kurye mi lazım?",
-    "Formu doldur kuryen gelsin."
-  ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % messages.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="flex flex-col items-center w-full mb-[-20px] relative z-[100] pointer-events-none">
-      {/* Speech Bubble */}
-      <div className="h-16 flex items-center justify-center mb-2">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={messageIndex}
-            initial={{ opacity: 0, scale: 0.5, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.5, y: -20 }}
-            className="bg-indigo-600 px-6 py-3 rounded-2xl shadow-2xl text-white text-sm font-bold relative whitespace-nowrap pointer-events-auto border-2 border-white/20"
-          >
-            {messages[messageIndex]}
-            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-indigo-600 rotate-45 border-r-2 border-b-2 border-white/20"></div>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      {/* Blue Lined Stickman SVG */}
-      <motion.div
-        animate={{
-          y: [0, -4, 0],
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="relative"
-      >
-        <svg
-          width="100"
-          height="120"
-          viewBox="0 0 40 48"
-          className="text-indigo-600 drop-shadow-2xl"
-        >
-          {/* Backpack */}
-          <rect x="13" y="18" width="7" height="12" rx="2" fill="currentColor" opacity="0.9" />
-          
-          {/* Head */}
-          <circle cx="20" cy="10" r="6" fill="white" stroke="currentColor" strokeWidth="2.5" />
-          
-          {/* Body */}
-          <line x1="20" y1="16" x2="20" y2="32" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-          
-          {/* Arms - Waving */}
-          <motion.path 
-            d="M 20 20 L 12 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2.5" 
-            strokeLinecap="round"
-            animate={{ d: ["M 20 20 L 12 24", "M 20 20 L 8 18", "M 20 20 L 12 24"] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.path 
-            d="M 20 20 L 28 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2.5" 
-            strokeLinecap="round"
-            animate={{ d: ["M 20 20 L 28 24", "M 20 20 L 32 18", "M 20 20 L 28 24"] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.75 }}
-          />
-          
-          {/* Legs - Standing */}
-          <line x1="20" y1="32" x2="15" y2="44" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-          <line x1="20" y1="32" x2="25" y2="44" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-          
-          {/* Eyes */}
-          <circle cx="18" cy="9" r="0.8" fill="currentColor" />
-          <circle cx="22" cy="9" r="0.8" fill="currentColor" />
-          
-          {/* Smile */}
-          <motion.path 
-            d="M 17 12 Q 20 14 23 12" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="1" 
-            strokeLinecap="round"
-            animate={{ d: ["M 17 12 Q 20 14 23 12", "M 17 12 Q 20 15 23 12", "M 17 12 Q 20 14 23 12"] }}
-            transition={{ duration: 0.5, repeat: Infinity }}
-          />
-        </svg>
-      </motion.div>
-    </div>
-  );
 };
 
 type VehicleType = 'motorcycle' | 'car' | 'van';
@@ -920,11 +816,11 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
               <div className="space-y-6">
                 <div className="flex gap-4">
                   <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 shrink-0">
-                    <Zap className="w-6 h-6" />
+                    <FileText className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900">Antalya Paket Gönder</h3>
-                    <p className="text-sm text-slate-500 mt-1">Antalya içinde paketlerinizi dakikalar içinde alıyor ve hedef adrese en hızlı şekilde ulaştırıyoruz.</p>
+                    <h3 className="font-bold text-slate-900">Antalya Dosya Gönder & Paket</h3>
+                    <p className="text-sm text-slate-500 mt-1">Antalya içinde dosya gönder ve paketlerinizi dakikalar içinde alıyor, hedef adrese en hızlı şekilde ulaştırıyoruz.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -932,17 +828,26 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
                     <Phone className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900">Antalya Kurye Çağır</h3>
-                    <p className="text-sm text-slate-500 mt-1">Uygulamamız üzerinden tek tıkla kurye çağırın, gönderinizi kapınızdan teslim alalım.</p>
+                    <h3 className="font-bold text-slate-900">Antalya Kurye Bul & Çağır</h3>
+                    <p className="text-sm text-slate-500 mt-1">Hızlıca Antalya kurye bul, tek tıkla kurye çağır, gönderini kapından teslim alalım.</p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 shrink-0">
+                    <Dog className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900">Antalya Pet Taxi</h3>
+                    <p className="text-sm text-slate-500 mt-1">Evcil dostlarınız için güvenli Antalya pet taxi hizmeti. Konforlu ve güvenli ulaşım.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
                   <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 shrink-0">
-                    <ShieldCheck className="w-6 h-6" />
+                    <Utensils className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900">Güvenilir Moto Kurye</h3>
-                    <p className="text-sm text-slate-500 mt-1">Profesyonel kurye ağımız ile evrak, paket ve değerli eşyalarınız Antalya trafiğine takılmadan güvende.</p>
+                    <h3 className="font-bold text-slate-900">Antalya Yemek Gönder</h3>
+                    <p className="text-sm text-slate-500 mt-1">Sıcak ve taze Antalya yemek gönder hizmeti ile restoran lezzetleri kapınızda.</p>
                   </div>
                 </div>
               </div>
@@ -963,7 +868,6 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
           {/* Auth Form */}
           <div className="flex justify-center">
             <div className="w-full max-w-md relative overflow-visible">
-              <StickManAnimation />
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -2804,7 +2708,6 @@ export default function App() {
                 {!activeOrder ? (
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                     <div className="lg:col-span-2 relative overflow-visible">
-                      <StickManAnimation />
                       <motion.div 
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
