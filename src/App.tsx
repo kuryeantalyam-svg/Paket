@@ -43,7 +43,7 @@ import {
   FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { 
   PushNotifications, 
   PushNotificationSchema, 
@@ -74,6 +74,38 @@ const PRE_URL = 'https://ais-pre-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.
 const API_BASE_URL = Capacitor.isNativePlatform() 
   ? PRE_URL 
   : '';
+
+// Helper function to handle API calls across platforms
+const fetchApi = async (url: string, options: any = {}) => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const { method = 'GET', headers = {}, body } = options;
+      const response = await CapacitorHttp.request({
+        url,
+        method: method.toUpperCase(),
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers
+        },
+        data: body ? (typeof body === 'string' ? JSON.parse(body) : body) : undefined,
+      });
+      
+      return {
+        ok: response.status >= 200 && response.status < 300,
+        status: response.status,
+        json: async () => response.data,
+      };
+    } catch (err) {
+      console.error("CapacitorHttp Error:", err);
+      throw err;
+    }
+  } else {
+    return fetch(url, {
+      ...options,
+      mode: 'cors'
+    });
+  }
+};
 
 const ANTALYA_COORDS: [number, number] = [36.8841, 30.7056];
 
@@ -167,7 +199,7 @@ async function geocode(address: string) {
   try {
     const allowedDistricts = ['Konyaaltı', 'Muratpaşa', 'Kepez', 'Döşemealtı'];
     // Nominatim search with addressdetails to get structured data
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ", Antalya")}&addressdetails=1&limit=5`);
+    const res = await fetchApi(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ", Antalya")}&addressdetails=1&limit=5`);
     const data = await res.json();
     
     if (data && data.length > 0) {
@@ -202,7 +234,7 @@ async function geocode(address: string) {
 async function reverseGeocode(lat: number, lng: number) {
   try {
     // zoom=18 for house number precision
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+    const res = await fetchApi(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
     const data = await res.json();
     if (data) {
       const addr = data.address;
@@ -556,7 +588,7 @@ function CourierApplicationScreen({ onBack, onLogin }: { onBack: () => void, onL
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(API_BASE_URL + '/api/auth/register', {
+      const res = await fetchApi(API_BASE_URL + '/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, role: 'courier', fullName, phone })
@@ -741,7 +773,7 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
     setForgotPasswordLoading(true);
     setForgotPasswordMessage(null);
     try {
-      const res = await fetch(API_BASE_URL + '/api/auth/forgot-password', {
+      const res = await fetchApi(API_BASE_URL + '/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotPasswordEmail })
@@ -779,9 +811,8 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
       console.log(`Attempting ${isLogin ? 'login' : 'register'} to: ${endpoint}`);
       let res;
       try {
-        res = await fetch(endpoint, {
+        res = await fetchApi(endpoint, {
           method: 'POST',
-          mode: 'cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
@@ -789,9 +820,8 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
         console.warn("Primary URL failed, trying DEV_URL:", fetchErr);
         // If PRE_URL fails, try DEV_URL
         const fallbackEndpoint = isLogin ? DEV_URL + '/api/auth/login' : DEV_URL + '/api/auth/register';
-        res = await fetch(fallbackEndpoint, {
+        res = await fetchApi(fallbackEndpoint, {
           method: 'POST',
-          mode: 'cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
@@ -1086,12 +1116,13 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
                   onClick={async () => {
                     setError('Bağlantı test ediliyor...');
                     try {
-                      const res = await fetch(API_BASE_URL + '/api/health', { mode: 'cors' });
+                      const res = await fetchApi(API_BASE_URL + '/api/health');
                       const data = await res.json();
-                      if (data.status === 'ok') {
+                      console.log("Health check response:", data);
+                      if (data && data.status === 'ok') {
                         setError('✅ Bağlantı Başarılı! Sunucu aktif.');
                       } else {
-                        setError('❌ Sunucu yanıt verdi ama durum "ok" değil.');
+                        setError(`❌ Sunucu yanıt verdi: ${JSON.stringify(data)}`);
                       }
                     } catch (err) {
                       setError(`❌ Bağlantı Başarısız: ${err instanceof Error ? err.message : String(err)}`);
@@ -1518,7 +1549,7 @@ export default function App() {
       PushNotifications.addListener('registration', (token: Token) => {
         console.log('Push registration success, token: ' + token.value);
         // Send the token to your server
-        fetch(`${API_BASE_URL}/api/auth/fcm-token`, {
+        fetchApi(`${API_BASE_URL}/api/auth/fcm-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.id, token: token.value })
@@ -1930,13 +1961,13 @@ export default function App() {
       }
     };
 
-    fetch(API_BASE_URL + '/api/orders').then(res => res.json()).then(setOrders);
+    fetchApi(API_BASE_URL + '/api/orders').then(res => res.json()).then(setOrders);
 
     // Periodic refresh for couriers to ensure no orders are missed
     let interval: number | null = null;
     if (role === 'courier') {
       interval = window.setInterval(() => {
-        fetch(API_BASE_URL + '/api/orders')
+        fetchApi(API_BASE_URL + '/api/orders')
           .then(res => res.json())
           .then(newOrders => {
             setOrders(prev => {
@@ -1961,7 +1992,7 @@ export default function App() {
 
   const fetchSavedAddresses = async (userId: string) => {
     try {
-      const res = await fetch(API_BASE_URL + `/api/saved-addresses/${userId}`);
+      const res = await fetchApi(API_BASE_URL + `/api/saved-addresses/${userId}`);
       const data = await res.json();
       if (Array.isArray(data)) {
         setSavedAddresses(data);
@@ -1974,7 +2005,7 @@ export default function App() {
   const saveAddress = async (title: string, address: string, lat: number, lng: number) => {
     if (!user) return;
     try {
-      const res = await fetch(API_BASE_URL + '/api/saved-addresses', {
+      const res = await fetchApi(API_BASE_URL + '/api/saved-addresses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, title, address, lat, lng })
@@ -1989,7 +2020,7 @@ export default function App() {
 
   const deleteSavedAddress = async (id: string) => {
     try {
-      const res = await fetch(API_BASE_URL + `/api/saved-addresses/${id}`, { method: 'DELETE' });
+      const res = await fetchApi(API_BASE_URL + `/api/saved-addresses/${id}`, { method: 'DELETE' });
       if (res.ok && user) {
         fetchSavedAddresses(user.id);
       }
@@ -2006,7 +2037,7 @@ export default function App() {
 
   useEffect(() => {
     if (activeOrder?.courier_id) {
-      fetch(API_BASE_URL + `/api/courier-location/${activeOrder.courier_id}`)
+      fetchApi(API_BASE_URL + `/api/courier-location/${activeOrder.courier_id}`)
         .then(res => res.json())
         .then(data => {
           if (data) setCourierLocation(data);
@@ -2018,13 +2049,13 @@ export default function App() {
     const fetchStats = () => {
       if (role === 'admin') {
         const adminHeaders = { 'x-admin-password': adminPasswordInput || '5807' };
-        fetch(API_BASE_URL + '/api/admin/stats', { headers: adminHeaders }).then(res => res.json()).then(data => {
+        fetchApi(API_BASE_URL + '/api/admin/stats', { headers: adminHeaders }).then(res => res.json()).then(data => {
           setOnlineCouriers(data.onlineCouriers);
           setWebhookConfigured(data.webhookConfigured);
         });
       }
       // Fetch online couriers for everyone to show on live map
-      fetch(API_BASE_URL + '/api/couriers').then(res => res.json()).then(data => {
+      fetchApi(API_BASE_URL + '/api/couriers').then(res => res.json()).then(data => {
         setAllCourierLocations(data);
         if (role !== 'admin') {
           setOnlineCouriers(data.length);
@@ -2037,7 +2068,7 @@ export default function App() {
 
     if (role === 'admin') {
       const adminHeaders = { 'x-admin-password': adminPasswordInput || '5807' };
-      fetch(API_BASE_URL + '/api/admin/users', { headers: adminHeaders }).then(res => res.json()).then(setUsers);
+      fetchApi(API_BASE_URL + '/api/admin/users', { headers: adminHeaders }).then(res => res.json()).then(setUsers);
     }
 
     return () => clearInterval(interval);
@@ -2051,7 +2082,7 @@ export default function App() {
   useEffect(() => {
     if (activeOrder?.id) {
       if (activeOrder.courier_id) {
-        fetch(API_BASE_URL + `/api/users/${activeOrder.courier_id}`)
+        fetchApi(API_BASE_URL + `/api/users/${activeOrder.courier_id}`)
           .then(res => res.json())
           .then(setActiveCourier)
           .catch(() => setActiveCourier(null));
@@ -2060,7 +2091,7 @@ export default function App() {
       }
 
       if (activeOrder.customer_id && role === 'courier') {
-        fetch(API_BASE_URL + `/api/users/${activeOrder.customer_id}`)
+        fetchApi(API_BASE_URL + `/api/users/${activeOrder.customer_id}`)
           .then(res => {
             if (!res.ok) throw new Error();
             return res.json();
@@ -2169,7 +2200,7 @@ export default function App() {
         delivery_lng: dCoords?.lng
       });
 
-      const res = await fetch(API_BASE_URL + '/api/orders', {
+      const res = await fetchApi(API_BASE_URL + '/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -2226,7 +2257,7 @@ export default function App() {
       setShowCallModal(true);
     }
 
-    await fetch(API_BASE_URL + `/api/orders/${orderId}`, {
+    await fetchApi(API_BASE_URL + `/api/orders/${orderId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'accepted', courierId: myCourierId })
@@ -2246,7 +2277,7 @@ export default function App() {
       return prev;
     });
 
-    await fetch(API_BASE_URL + `/api/orders/${orderId}`, {
+    await fetchApi(API_BASE_URL + `/api/orders/${orderId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, courierId: myCourierId })
@@ -2259,7 +2290,7 @@ export default function App() {
     try {
       console.log("Cancelling order:", orderId);
       
-      const res = await fetch(API_BASE_URL + `/api/orders/${orderId}`, {
+      const res = await fetchApi(API_BASE_URL + `/api/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'pending', courierId: null })
@@ -2280,14 +2311,14 @@ export default function App() {
       console.error("Cancel error:", error);
       alert(`İptal işlemi sırasında bir hata oluştu: ${error.message}. Lütfen tekrar deneyin.`);
       // Refresh orders to sync state
-      fetch(API_BASE_URL + '/api/orders').then(res => res.json()).then(setOrders);
+      fetchApi(API_BASE_URL + '/api/orders').then(res => res.json()).then(setOrders);
     }
   };
 
   useEffect(() => {
     if (view === 'earnings' && user?.id) {
       setLoadingEarnings(true);
-      fetch(API_BASE_URL + `/api/courier/earnings/${user.id}`)
+      fetchApi(API_BASE_URL + `/api/courier/earnings/${user.id}`)
         .then(res => res.json())
         .then(data => {
           setEarningsData(data);
@@ -2601,7 +2632,7 @@ export default function App() {
                     e.preventDefault();
                     const form = e.target as HTMLFormElement;
                     const message = (form.elements.namedItem('message') as HTMLTextAreaElement).value;
-                    await fetch(API_BASE_URL + '/api/admin/notify', {
+                    await fetchApi(API_BASE_URL + '/api/admin/notify', {
                       method: 'POST',
                       headers: { 
                         'Content-Type': 'application/json',
