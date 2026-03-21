@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.antalyateslimat.app',
+  appId: 'com.kuryeantalya.app',
   appName: 'Antalya Teslimat',
   webDir: 'dist',
   server: {
