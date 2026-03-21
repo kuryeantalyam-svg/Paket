@@ -1438,7 +1438,7 @@ export default function App() {
     const saved = localStorage.getItem('smartpack_user');
     return saved ? JSON.parse(saved).role : 'customer';
   });
-  const [view, setView] = useState<'active' | 'history' | 'addresses' | 'earnings'>('active');
+  const [view, setView] = useState<'active' | 'history' | 'addresses' | 'earnings' | 'mobile-app'>('active');
   const [earningsData, setEarningsData] = useState<{
     totalEarnings: number;
     deliveriesCount: number;
@@ -2405,6 +2405,16 @@ export default function App() {
               {view === 'addresses' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
             </button>
           )}
+          <button 
+            onClick={() => setView('mobile-app')}
+            className={cn(
+              "pb-4 px-2 text-sm font-bold transition-all relative",
+              view === 'mobile-app' ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+            )}
+          >
+            Mobil Uygulama
+            {view === 'mobile-app' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
+          </button>
         </div>
 
 
@@ -3877,6 +3887,108 @@ export default function App() {
               </div>
             )}
           </div>
+        )}
+        {view === 'mobile-app' && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-8"
+          >
+            <div className="bg-white rounded-[2.5rem] p-10 shadow-xl border border-slate-100 text-center">
+              <div className="w-20 h-20 bg-indigo-100 rounded-3xl flex items-center justify-center text-indigo-600 mx-auto mb-6">
+                <Zap className="w-10 h-10" />
+              </div>
+              <h2 className="text-3xl font-black text-slate-900 mb-4">Antalya Teslimat Cebinizde!</h2>
+              <p className="text-slate-500 max-w-lg mx-auto mb-8">
+                Uygulamamızı telefonunuza yükleyerek daha hızlı sipariş verebilir, kuryenizi anlık bildirimlerle takip edebilirsiniz.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 text-left">
+                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 mb-4 shadow-sm">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-2">Hızlı Kurulum (PWA)</h3>
+                  <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+                    Tarayıcınızın "Ana Ekrana Ekle" özelliğini kullanarak uygulamayı saniyeler içinde yükleyebilirsiniz. APK indirmeye gerek kalmadan her zaman güncel kalır.
+                  </p>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-xs font-medium text-slate-600">
+                      <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px] border border-slate-200">1</div>
+                      <span>Tarayıcı menüsünü açın</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs font-medium text-slate-600">
+                      <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px] border border-slate-200">2</div>
+                      <span>"Ana Ekrana Ekle"ye dokunun</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-indigo-600 p-8 rounded-[2rem] text-white text-left relative overflow-hidden">
+                  <div className="absolute -right-4 -top-4 opacity-10">
+                    <Package className="w-32 h-32" />
+                  </div>
+                  <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white mb-4">
+                    <ExternalLink className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-2">Google Play & APK</h3>
+                  <p className="text-xs text-indigo-100 mb-6 leading-relaxed">
+                    Çok yakında Google Play Store'da! Şu an için APK sürümümüzü test aşamasında indirebilirsiniz.
+                  </p>
+                  <button 
+                    onClick={() => window.open('https://antalyateslimat.com/download', '_blank')}
+                    className="w-full bg-white text-indigo-600 font-bold py-3 rounded-xl text-sm hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    APK İndir (Beta)
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold mb-4">Neden Uygulamayı Yüklemelisiniz?</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-emerald-400">
+                        <Bell className="w-4 h-4" />
+                      </div>
+                      <span className="text-sm font-medium">Anlık Bildirimler</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-emerald-400">
+                        <Navigation className="w-4 h-4" />
+                      </div>
+                      <span className="text-sm font-medium">Canlı Harita Takibi</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-emerald-400">
+                        <Clock className="w-4 h-4" />
+                      </div>
+                      <span className="text-sm font-medium">Hızlı Sipariş Tekrarı</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-emerald-400">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <span className="text-sm font-medium">Güvenli Ödeme</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="w-full md:w-48 aspect-square bg-white p-4 rounded-3xl flex items-center justify-center">
+                  {/* Placeholder for QR Code */}
+                  <div className="text-center">
+                    <div className="w-32 h-32 bg-slate-100 rounded-xl mb-2 flex items-center justify-center">
+                      <Package className="w-12 h-12 text-slate-300" />
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">QR Kod Yakında</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         )}
       </main>
 

@@ -5,7 +5,9 @@ const config: CapacitorConfig = {
   appName: 'Antalya Teslimat',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    url: 'https://paket-wyne.onrender.com',
+    cleartext: true
   }
 };
 

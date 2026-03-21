@@ -1,8 +1,9 @@
 {
-  "name": "SmartPack - Akıllı Kurye Takip Sistemi",
-  "description": "Müşteriler için canlı takip, kuryeler için sesli bildirim ve navigasyon desteği sunan profesyonel paket teslimat uygulaması.",
+  "name": "Antalya Teslimat - Kurye Takip",
+  "description": "Antalya'nın profesyonel kurye ve paket teslimat uygulaması. Canlı takip, kurye bildirimleri ve hızlı teslimat yönetimi.",
   "requestFramePermissions": [
     "geolocation",
-    "microphone"
+    "microphone",
+    "camera"
   ]
 }
