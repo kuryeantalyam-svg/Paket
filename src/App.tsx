@@ -43,7 +43,7 @@ import {
   FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Capacitor, CapacitorHttp } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
 import { 
   PushNotifications, 
   PushNotificationSchema, 
@@ -68,50 +68,9 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-const RENDER_URL = 'https://paket-wyne.onrender.com';
-const DEV_URL = 'https://ais-dev-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app';
-const PRE_URL = 'https://ais-pre-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app';
-
-// APK'lar için Render sunucusu kalıcı ve sorunsuz çözümdür
-const DEFAULT_API_URL = Capacitor.isNativePlatform() ? RENDER_URL : '';
-let API_BASE_URL = localStorage.getItem('custom_api_url') || DEFAULT_API_URL;
-
-const setApiUrl = (url: string) => {
-  localStorage.setItem('custom_api_url', url);
-  window.location.reload();
-};
-
-// Helper function to handle API calls across platforms
-const fetchApi = async (url: string, options: any = {}) => {
-  if (Capacitor.isNativePlatform()) {
-    try {
-      const { method = 'GET', headers = {}, body } = options;
-      const response = await CapacitorHttp.request({
-        url,
-        method: method.toUpperCase(),
-        headers: {
-          'Content-Type': 'application/json',
-          ...headers
-        },
-        data: body ? (typeof body === 'string' ? JSON.parse(body) : body) : undefined,
-      });
-      
-      return {
-        ok: response.status >= 200 && response.status < 300,
-        status: response.status,
-        json: async () => response.data,
-      };
-    } catch (err) {
-      console.error("CapacitorHttp Error:", err);
-      throw err;
-    }
-  } else {
-    return fetch(url, {
-      ...options,
-      mode: 'cors'
-    });
-  }
-};
+const API_BASE_URL = Capacitor.isNativePlatform() 
+  ? 'https://ais-pre-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app' 
+  : '';
 
 const ANTALYA_COORDS: [number, number] = [36.8841, 30.7056];
 
@@ -205,7 +164,7 @@ async function geocode(address: string) {
   try {
     const allowedDistricts = ['Konyaaltı', 'Muratpaşa', 'Kepez', 'Döşemealtı'];
     // Nominatim search with addressdetails to get structured data
-    const res = await fetchApi(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ", Antalya")}&addressdetails=1&limit=5`);
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ", Antalya")}&addressdetails=1&limit=5`);
     const data = await res.json();
     
     if (data && data.length > 0) {
@@ -240,7 +199,7 @@ async function geocode(address: string) {
 async function reverseGeocode(lat: number, lng: number) {
   try {
     // zoom=18 for house number precision
-    const res = await fetchApi(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
     const data = await res.json();
     if (data) {
       const addr = data.address;
@@ -594,7 +553,7 @@ function CourierApplicationScreen({ onBack, onLogin }: { onBack: () => void, onL
     setError('');
     setLoading(true);
     try {
-      const res = await fetchApi(API_BASE_URL + '/api/auth/register', {
+      const res = await fetch(API_BASE_URL + '/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, role: 'courier', fullName, phone })
@@ -779,7 +738,7 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
     setForgotPasswordLoading(true);
     setForgotPasswordMessage(null);
     try {
-      const res = await fetchApi(API_BASE_URL + '/api/auth/forgot-password', {
+      const res = await fetch(API_BASE_URL + '/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotPasswordEmail })
@@ -802,11 +761,6 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
     }
   };
 
-  useEffect(() => {
-    console.log("Capacitor isNativePlatform:", Capacitor.isNativePlatform());
-    console.log("API_BASE_URL:", API_BASE_URL);
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -814,25 +768,11 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
     const body = isLogin ? { email, password } : { email, password, role, fullName, phone };
 
     try {
-      console.log(`Attempting ${isLogin ? 'login' : 'register'} to: ${endpoint}`);
-      let res;
-      try {
-        res = await fetchApi(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-      } catch (fetchErr) {
-        console.warn("Primary URL failed, trying DEV_URL:", fetchErr);
-        // If PRE_URL fails, try DEV_URL
-        const fallbackEndpoint = isLogin ? DEV_URL + '/api/auth/login' : DEV_URL + '/api/auth/register';
-        res = await fetchApi(fallbackEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-      }
-
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
       const data = await res.json();
       if (res.ok) {
         if (isLogin && data.role !== role && role !== 'admin') {
@@ -850,8 +790,7 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
       }
     } catch (err) {
       console.error("Auth error:", err);
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      setError(`Sunucuya bağlanılamadı. Hata: ${errorMessage}. (Hedef: ${endpoint})`);
+      setError(`Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin. (Hedef: ${endpoint})`);
     }
   };
 
@@ -1116,59 +1055,6 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
                 >
                   {isLogin ? 'Giriş Yap' : 'Kayıt Ol'}
                 </button>
-
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setError('Bağlantı test ediliyor...');
-                    try {
-                      const res = await fetchApi(API_BASE_URL + '/api/health');
-                      const data = await res.json();
-                      
-                      if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
-                        setError('⚠️ Google Güvenlik Engeli: Bu URL (run.app) APK içinden doğrudan erişime kapalıdır. Lütfen uygulamayı tarayıcıdan (Chrome) açarak kullanın.');
-                        return;
-                      }
-
-                      if (data && data.status === 'ok') {
-                        setError('✅ Bağlantı Başarılı! Sunucu aktif.');
-                      } else {
-                        setError(`❌ Sunucu yanıt verdi: ${JSON.stringify(data).substring(0, 100)}...`);
-                      }
-                    } catch (err) {
-                      setError(`❌ Bağlantı Başarısız: Sunucuya ulaşılamıyor. (CORS veya Ağ Hatası)`);
-                    }
-                  }}
-                  className="w-full mt-4 text-indigo-600 text-sm font-bold hover:underline"
-                >
-                  Bağlantıyı Test Et
-                </button>
-
-                <div className="mt-8 pt-6 border-t border-slate-100">
-                  <p className="text-[10px] text-slate-400 text-center uppercase tracking-widest mb-4">Sunucu Ayarları (Google Play Hazır)</p>
-                  <div className="flex flex-col gap-2">
-                    <button 
-                      type="button"
-                      onClick={() => setApiUrl(RENDER_URL)}
-                      className={cn(
-                        "text-[10px] py-2 rounded-lg border transition-all",
-                        API_BASE_URL === RENDER_URL ? "bg-emerald-50 border-emerald-200 text-emerald-600 font-bold" : "border-slate-200 text-slate-400"
-                      )}
-                    >
-                      Render Sunucusu (Aktif / Google Play)
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => setApiUrl(DEV_URL)}
-                      className={cn(
-                        "text-[10px] py-2 rounded-lg border transition-all",
-                        API_BASE_URL === DEV_URL ? "bg-indigo-50 border-indigo-200 text-indigo-600 font-bold" : "border-slate-200 text-slate-400"
-                      )}
-                    >
-                      Yedek Sunucu (DEV)
-                    </button>
-                  </div>
-                </div>
               </form>
 
               <div className="mt-8 pt-6 border-t border-slate-100 text-center space-y-4">
@@ -1586,7 +1472,7 @@ export default function App() {
       PushNotifications.addListener('registration', (token: Token) => {
         console.log('Push registration success, token: ' + token.value);
         // Send the token to your server
-        fetchApi(`${API_BASE_URL}/api/auth/fcm-token`, {
+        fetch(`${API_BASE_URL}/api/auth/fcm-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.id, token: token.value })
@@ -1998,13 +1884,13 @@ export default function App() {
       }
     };
 
-    fetchApi(API_BASE_URL + '/api/orders').then(res => res.json()).then(setOrders);
+    fetch(API_BASE_URL + '/api/orders').then(res => res.json()).then(setOrders);
 
     // Periodic refresh for couriers to ensure no orders are missed
     let interval: number | null = null;
     if (role === 'courier') {
       interval = window.setInterval(() => {
-        fetchApi(API_BASE_URL + '/api/orders')
+        fetch(API_BASE_URL + '/api/orders')
           .then(res => res.json())
           .then(newOrders => {
             setOrders(prev => {
@@ -2029,7 +1915,7 @@ export default function App() {
 
   const fetchSavedAddresses = async (userId: string) => {
     try {
-      const res = await fetchApi(API_BASE_URL + `/api/saved-addresses/${userId}`);
+      const res = await fetch(API_BASE_URL + `/api/saved-addresses/${userId}`);
       const data = await res.json();
       if (Array.isArray(data)) {
         setSavedAddresses(data);
@@ -2042,7 +1928,7 @@ export default function App() {
   const saveAddress = async (title: string, address: string, lat: number, lng: number) => {
     if (!user) return;
     try {
-      const res = await fetchApi(API_BASE_URL + '/api/saved-addresses', {
+      const res = await fetch(API_BASE_URL + '/api/saved-addresses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, title, address, lat, lng })
@@ -2057,7 +1943,7 @@ export default function App() {
 
   const deleteSavedAddress = async (id: string) => {
     try {
-      const res = await fetchApi(API_BASE_URL + `/api/saved-addresses/${id}`, { method: 'DELETE' });
+      const res = await fetch(API_BASE_URL + `/api/saved-addresses/${id}`, { method: 'DELETE' });
       if (res.ok && user) {
         fetchSavedAddresses(user.id);
       }
@@ -2074,7 +1960,7 @@ export default function App() {
 
   useEffect(() => {
     if (activeOrder?.courier_id) {
-      fetchApi(API_BASE_URL + `/api/courier-location/${activeOrder.courier_id}`)
+      fetch(API_BASE_URL + `/api/courier-location/${activeOrder.courier_id}`)
         .then(res => res.json())
         .then(data => {
           if (data) setCourierLocation(data);
@@ -2086,13 +1972,13 @@ export default function App() {
     const fetchStats = () => {
       if (role === 'admin') {
         const adminHeaders = { 'x-admin-password': adminPasswordInput || '5807' };
-        fetchApi(API_BASE_URL + '/api/admin/stats', { headers: adminHeaders }).then(res => res.json()).then(data => {
+        fetch(API_BASE_URL + '/api/admin/stats', { headers: adminHeaders }).then(res => res.json()).then(data => {
           setOnlineCouriers(data.onlineCouriers);
           setWebhookConfigured(data.webhookConfigured);
         });
       }
       // Fetch online couriers for everyone to show on live map
-      fetchApi(API_BASE_URL + '/api/couriers').then(res => res.json()).then(data => {
+      fetch(API_BASE_URL + '/api/couriers').then(res => res.json()).then(data => {
         setAllCourierLocations(data);
         if (role !== 'admin') {
           setOnlineCouriers(data.length);
@@ -2105,7 +1991,7 @@ export default function App() {
 
     if (role === 'admin') {
       const adminHeaders = { 'x-admin-password': adminPasswordInput || '5807' };
-      fetchApi(API_BASE_URL + '/api/admin/users', { headers: adminHeaders }).then(res => res.json()).then(setUsers);
+      fetch(API_BASE_URL + '/api/admin/users', { headers: adminHeaders }).then(res => res.json()).then(setUsers);
     }
 
     return () => clearInterval(interval);
@@ -2119,7 +2005,7 @@ export default function App() {
   useEffect(() => {
     if (activeOrder?.id) {
       if (activeOrder.courier_id) {
-        fetchApi(API_BASE_URL + `/api/users/${activeOrder.courier_id}`)
+        fetch(API_BASE_URL + `/api/users/${activeOrder.courier_id}`)
           .then(res => res.json())
           .then(setActiveCourier)
           .catch(() => setActiveCourier(null));
@@ -2128,7 +2014,7 @@ export default function App() {
       }
 
       if (activeOrder.customer_id && role === 'courier') {
-        fetchApi(API_BASE_URL + `/api/users/${activeOrder.customer_id}`)
+        fetch(API_BASE_URL + `/api/users/${activeOrder.customer_id}`)
           .then(res => {
             if (!res.ok) throw new Error();
             return res.json();
@@ -2237,7 +2123,7 @@ export default function App() {
         delivery_lng: dCoords?.lng
       });
 
-      const res = await fetchApi(API_BASE_URL + '/api/orders', {
+      const res = await fetch(API_BASE_URL + '/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -2294,7 +2180,7 @@ export default function App() {
       setShowCallModal(true);
     }
 
-    await fetchApi(API_BASE_URL + `/api/orders/${orderId}`, {
+    await fetch(API_BASE_URL + `/api/orders/${orderId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'accepted', courierId: myCourierId })
@@ -2314,7 +2200,7 @@ export default function App() {
       return prev;
     });
 
-    await fetchApi(API_BASE_URL + `/api/orders/${orderId}`, {
+    await fetch(API_BASE_URL + `/api/orders/${orderId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, courierId: myCourierId })
@@ -2327,7 +2213,7 @@ export default function App() {
     try {
       console.log("Cancelling order:", orderId);
       
-      const res = await fetchApi(API_BASE_URL + `/api/orders/${orderId}`, {
+      const res = await fetch(API_BASE_URL + `/api/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'pending', courierId: null })
@@ -2348,14 +2234,14 @@ export default function App() {
       console.error("Cancel error:", error);
       alert(`İptal işlemi sırasında bir hata oluştu: ${error.message}. Lütfen tekrar deneyin.`);
       // Refresh orders to sync state
-      fetchApi(API_BASE_URL + '/api/orders').then(res => res.json()).then(setOrders);
+      fetch(API_BASE_URL + '/api/orders').then(res => res.json()).then(setOrders);
     }
   };
 
   useEffect(() => {
     if (view === 'earnings' && user?.id) {
       setLoadingEarnings(true);
-      fetchApi(API_BASE_URL + `/api/courier/earnings/${user.id}`)
+      fetch(API_BASE_URL + `/api/courier/earnings/${user.id}`)
         .then(res => res.json())
         .then(data => {
           setEarningsData(data);
@@ -2669,7 +2555,7 @@ export default function App() {
                     e.preventDefault();
                     const form = e.target as HTMLFormElement;
                     const message = (form.elements.namedItem('message') as HTMLTextAreaElement).value;
-                    await fetchApi(API_BASE_URL + '/api/admin/notify', {
+                    await fetch(API_BASE_URL + '/api/admin/notify', {
                       method: 'POST',
                       headers: { 
                         'Content-Type': 'application/json',
