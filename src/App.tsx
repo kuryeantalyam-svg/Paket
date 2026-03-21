@@ -68,8 +68,11 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
+const DEV_URL = 'https://ais-dev-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app';
+const PRE_URL = 'https://ais-pre-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app';
+
 const API_BASE_URL = Capacitor.isNativePlatform() 
-  ? 'https://ais-pre-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app' 
+  ? PRE_URL 
   : '';
 
 const ANTALYA_COORDS: [number, number] = [36.8841, 30.7056];
@@ -774,12 +777,26 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
 
     try {
       console.log(`Attempting ${isLogin ? 'login' : 'register'} to: ${endpoint}`);
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
+      let res;
+      try {
+        res = await fetch(endpoint, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      } catch (fetchErr) {
+        console.warn("Primary URL failed, trying DEV_URL:", fetchErr);
+        // If PRE_URL fails, try DEV_URL
+        const fallbackEndpoint = isLogin ? DEV_URL + '/api/auth/login' : DEV_URL + '/api/auth/register';
+        res = await fetch(fallbackEndpoint, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      }
+
       const data = await res.json();
       if (res.ok) {
         if (isLogin && data.role !== role && role !== 'admin') {
