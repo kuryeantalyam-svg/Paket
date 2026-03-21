@@ -309,26 +309,18 @@ async function startServer() {
   const wss = new WebSocketServer({ server });
   const PORT = Number(process.env.PORT) || 3000;
 
-  app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: '*',
-    credentials: true,
-    preflightContinue: false,
-    optionsSuccessStatus: 204
-  }));
-
   app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url} - Origin: ${req.headers.origin} - User-Agent: ${req.headers['user-agent']}`);
-    next();
-  });
-
-  // Explicitly handle OPTIONS preflight
-  app.options('*', (req, res) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.header('Access-Control-Allow-Headers', '*');
-    res.sendStatus(204);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(204);
+    }
+    
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
+    next();
   });
 
   app.use(express.json());
