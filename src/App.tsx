@@ -44,6 +44,12 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Capacitor } from '@capacitor/core';
+import { 
+  PushNotifications, 
+  PushNotificationSchema, 
+  Token, 
+  ActionPerformed 
+} from '@capacitor/push-notifications';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -579,7 +585,7 @@ function CourierApplicationScreen({ onBack, onLogin }: { onBack: () => void, onL
             </div>
             <h1 className="text-4xl font-black mb-6 leading-tight">Antalya'nın Kurye Ağına Katıl!</h1>
             <p className="text-indigo-100 text-lg mb-8 leading-relaxed">
-              Başka bir firmada çalışıyor olsanız bile, SmartPack üzerinden gelen ek taleplerle boş vakitlerinizi kazanca dönüştürebilirsiniz.
+              Başka bir firmada çalışıyor olsanız bile, Antalya Teslimat üzerinden gelen ek taleplerle boş vakitlerinizi kazanca dönüştürebilirsiniz.
             </p>
             <div className="space-y-4 mb-8">
               <div className="flex items-center gap-4">
@@ -783,7 +789,8 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
         setError(data.error || 'Bir hata oluştu');
       }
     } catch (err) {
-      setError('Sunucuya bağlanılamadı');
+      console.error("Auth error:", err);
+      setError(`Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin. (Hedef: ${endpoint})`);
     }
   };
 
@@ -881,7 +888,7 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
                   onClick={handleHiddenClick}
                   className="text-2xl font-bold tracking-tight cursor-default select-none"
                 >
-                  SmartPack
+                  Antalya Teslimat
                 </h1>
                 <p className="text-slate-500 text-sm mt-1">
                   {isLogin ? 'Hesabınıza giriş yapın' : 'Yeni hesap oluşturun'}
@@ -1250,7 +1257,7 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
               <div className="space-y-6">
                 {[
                   {
-                    q: "SmartPack ile ne kadar sürede teslimat yapılır?",
+                    q: "Antalya Teslimat ile ne kadar sürede teslimat yapılır?",
                     a: "Antalya şehir içi gönderileriniz, kuryemiz paketi teslim aldıktan sonra ortalama 30-45 dakika içerisinde alıcıya ulaştırılır."
                   },
                   {
@@ -1285,7 +1292,7 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
                   <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
                     <Package className="w-6 h-6" />
                   </div>
-                  <span className="text-xl font-black tracking-tighter text-slate-900">SmartPack</span>
+                  <span className="text-xl font-black tracking-tighter text-slate-900">Antalya Teslimat</span>
                 </div>
                 <p className="text-sm text-slate-500 leading-relaxed">
                   Antalya'nın en akıllı kurye takip sistemi. 7/24 hızlı, güvenilir ve profesyonel moto kurye çözümleri.
@@ -1332,7 +1339,7 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
             </div>
             
             <div className="pt-8 border-t border-slate-100 flex flex-col md:row items-center justify-between gap-4">
-              <p className="text-xs text-slate-400">© 2026 SmartPack Antalya. Tüm hakları saklıdır.</p>
+              <p className="text-xs text-slate-400">© 2026 Antalya Teslimat. Tüm hakları saklıdır.</p>
               <div className="flex items-center gap-6">
                 <a href="#" className="text-slate-400 hover:text-indigo-600 transition-colors"><Instagram className="w-5 h-5" /></a>
                 <a href="#" className="text-slate-400 hover:text-indigo-600 transition-colors"><Facebook className="w-5 h-5" /></a>
@@ -1377,17 +1384,17 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
                   {showTermsModal.type === 'terms' && (
                     <>
                       <p className="font-bold text-slate-900">1. Taraflar</p>
-                      <p>İşbu sözleşme, SmartPack platformu ile platform üzerinden hizmet alan Müşteri arasında akdedilmiştir.</p>
+                      <p>İşbu sözleşme, Antalya Teslimat platformu ile platform üzerinden hizmet alan Müşteri arasında akdedilmiştir.</p>
                       <p className="font-bold text-slate-900">2. Hizmetin Niteliği</p>
-                      <p>SmartPack, kuryeler ile müşterileri bir araya getiren bir teknoloji platformudur. SmartPack, taşıma hizmetinin bizzat sağlayıcısı değildir.</p>
+                      <p>Antalya Teslimat, kuryeler ile müşterileri bir araya getiren bir teknoloji platformudur. Antalya Teslimat, taşıma hizmetinin bizzat sağlayıcısı değildir.</p>
                       <p className="font-bold text-slate-900">3. Sorumluluk Sınırları</p>
-                      <p>Müşteri, gönderinin içeriğinden ve yasalara uygunluğundan sorumludur. SmartPack, kurye tarafından sunulan hizmetin kalitesi veya ifası ile ilgili doğrudan sorumluluk kabul etmez.</p>
+                      <p>Müşteri, gönderinin içeriğinden ve yasalara uygunluğundan sorumludur. Antalya Teslimat, kurye tarafından sunulan hizmetin kalitesi veya ifası ile ilgili doğrudan sorumluluk kabul etmez.</p>
                     </>
                   )}
                   {showTermsModal.type === 'kvkk' && (
                     <>
                       <p className="font-bold text-slate-900">1. Veri Sorumlusu</p>
-                      <p>SmartPack olarak kişisel verilerinizin güvenliğine önem veriyoruz.</p>
+                      <p>Antalya Teslimat olarak kişisel verilerinizin güvenliğine önem veriyoruz.</p>
                       <p className="font-bold text-slate-900">2. İşlenen Veriler</p>
                       <p>Ad, soyad, telefon numarası, e-posta adresi ve konum verileriniz hizmetin ifası amacıyla işlenmektedir.</p>
                       <p className="font-bold text-slate-900">3. İşleme Amacı</p>
@@ -1397,7 +1404,7 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
                   {showTermsModal.type === 'courier' && (
                     <>
                       <p className="font-bold text-slate-900">1. Bağımsız Statü</p>
-                      <p>Kurye, SmartPack'in bir çalışanı veya temsilcisi değildir. Kurye, kendi nam ve hesabına çalışan bağımsız bir hizmet sağlayıcıdır.</p>
+                      <p>Kurye, Antalya Teslimat'ın bir çalışanı veya temsilcisi değildir. Kurye, kendi nam ve hesabına çalışan bağımsız bir hizmet sağlayıcıdır.</p>
                       <p className="font-bold text-slate-900">2. Vergi ve Sigorta</p>
                       <p>Kurye, kendi vergi mükellefiyetinden, sosyal güvenlik primlerinden ve her türlü sigorta yükümlülüğünden bizzat sorumludur.</p>
                       <p className="font-bold text-slate-900">3. Platformun Rolü</p>
@@ -1451,26 +1458,68 @@ export default function App() {
 
   const [isCourierApplicationPage, setIsCourierApplicationPage] = useState(false);
 
+  // Push Notifications Setup
+  useEffect(() => {
+    if (Capacitor.isNativePlatform() && role === 'courier' && user) {
+      // Request permission to use push notifications
+      PushNotifications.requestPermissions().then(result => {
+        if (result.receive === 'granted') {
+          PushNotifications.register();
+        }
+      });
+
+      // On success, we should be able to receive notifications
+      PushNotifications.addListener('registration', (token: Token) => {
+        console.log('Push registration success, token: ' + token.value);
+        // Send the token to your server
+        fetch(`${API_BASE_URL}/api/auth/fcm-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, token: token.value })
+        }).catch(err => console.error("Failed to save FCM token:", err));
+      });
+
+      // Some error occurred
+      PushNotifications.addListener('registrationError', (error: any) => {
+        console.error('Error on registration: ' + JSON.stringify(error));
+      });
+
+      // Show us the notification payload if the app is open on our device
+      PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
+        console.log('Push received: ' + JSON.stringify(notification));
+      });
+
+      // Method called when tapping on a notification
+      PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
+        console.log('Push action performed: ' + JSON.stringify(action));
+      });
+
+      return () => {
+        PushNotifications.removeAllListeners();
+      };
+    }
+  }, [role, user]);
+
   // URL Path Handling for SEO and Deep Linking
   useEffect(() => {
     const path = window.location.pathname;
-    let title = "SmartPack - Antalya Kurye Çağır | Paket Gönder";
+    let title = "Antalya Teslimat - Kurye Çağır | Paket Gönder";
     
     if (path === '/kuryebasvuru') {
       setIsCourierApplicationPage(true);
-      title = "Kurye Başvurusu - SmartPack Antalya";
+      title = "Kurye Başvurusu - Antalya Teslimat";
     } else if (path === '/kurye-basvurusu') {
       setRole('courier');
-      title = "Kurye Başvurusu - SmartPack Antalya";
+      title = "Kurye Başvurusu - Antalya Teslimat";
     } else if (path === '/musteri-girisi') {
       setRole('customer');
-      title = "Müşteri Girişi - SmartPack Antalya";
+      title = "Müşteri Girişi - Antalya Teslimat";
     } else if (path === '/moto-kurye-antalya') {
-      title = "Antalya Moto Kurye Hizmetleri - SmartPack";
+      title = "Antalya Moto Kurye Hizmetleri - Antalya Teslimat";
     } else if (path === '/acil-kurye-antalya') {
       title = "Antalya Acil Kurye | 30 Dakikada Teslimat";
     } else if (path === '/hakkimizda') {
-      title = "Hakkımızda - SmartPack Antalya";
+      title = "Hakkımızda - Antalya Teslimat";
     }
     
     document.title = title;
@@ -1478,11 +1527,11 @@ export default function App() {
 
   useEffect(() => {
     if (role === 'admin') {
-      document.title = "Yönetici Paneli - SmartPack";
+      document.title = "Yönetici Paneli - Antalya Teslimat";
     } else if (role === 'courier') {
-      document.title = "Kurye Paneli - SmartPack";
+      document.title = "Kurye Paneli - Antalya Teslimat";
     } else if (role === 'business') {
-      document.title = "Kurumsal Panel - SmartPack";
+      document.title = "Kurumsal Panel - Antalya Teslimat";
     }
   }, [role]);
   
@@ -2257,7 +2306,7 @@ export default function App() {
           <div className="bg-indigo-600 p-2 rounded-xl">
             <Package className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">SmartPack</h1>
+          <h1 className="text-xl font-bold tracking-tight">Antalya Teslimat</h1>
         </div>
         
         <div className="flex items-center gap-4">
@@ -3044,7 +3093,7 @@ export default function App() {
                     </div>
 
                     <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                      <h4 className="font-bold mb-4">Neden SmartPack?</h4>
+                      <h4 className="font-bold mb-4">Neden Antalya Teslimat?</h4>
                       <ul className="space-y-3">
                         {[
                           "Canlı takip imkanı",
@@ -3244,7 +3293,7 @@ export default function App() {
                                   </a>
                                 )}
                                 <a 
-                                  href={`https://wa.me/?text=${encodeURIComponent(`*Yeni Paket Talebi!* 📦\n\n*Takip No:* #${activeOrder.id}\n*Alım:* ${activeOrder.pickup_address}\n*Teslim:* ${activeOrder.delivery_address}\n*Araç:* ${activeOrder.vehicle_type}\n\nSmartPack Uygulaması`)}`}
+                                  href={`https://wa.me/?text=${encodeURIComponent(`*Yeni Paket Talebi!* 📦\n\n*Takip No:* #${activeOrder.id}\n*Alım:* ${activeOrder.pickup_address}\n*Teslim:* ${activeOrder.delivery_address}\n*Araç:* ${activeOrder.vehicle_type}\n\nAntalya Teslimat Uygulaması`)}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="p-4 bg-emerald-500 text-white rounded-2xl shadow-sm hover:bg-emerald-600 transition-colors"

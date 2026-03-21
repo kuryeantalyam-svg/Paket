@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors";
 import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { createServer as createViteServer } from "vite";
@@ -92,7 +93,7 @@ async function sendEmailToCouriers(order: any) {
     if (emails.length === 0) return;
 
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"SmartPack" <noreply@example.com>',
+      from: process.env.EMAIL_FROM || '"Antalya Teslimat" <noreply@example.com>',
       to: emails.join(", "),
       subject: "Yeni Paket Talebi Mevcut!",
       text: `Yeni bir paket talebi oluşturuldu.\n\nAlım Adresi: ${order.pickup_address}\nTeslim Adresi: ${order.delivery_address}\nAraç Tipi: ${order.vehicle_type}\n\nLütfen uygulamaya girerek talebi kabul edin.`,
@@ -113,6 +114,51 @@ async function sendEmailToCouriers(order: any) {
     console.log(`Email notification sent to ${emails.length} couriers.`);
   } catch (error) {
     console.error("Error sending email notification:", error);
+  }
+}
+
+async function sendPushNotificationToCouriers(order: any) {
+  const fcmServerKey = process.env.FCM_SERVER_KEY;
+  if (!fcmServerKey) {
+    console.log("FCM_SERVER_KEY missing. Skipping push notification.");
+    return;
+  }
+
+  try {
+    const tokens = db.prepare("SELECT token FROM fcm_tokens WHERE user_id IN (SELECT id FROM users WHERE role = 'courier')").all() as { token: string }[];
+    const tokenList = tokens.map(t => t.token);
+
+    if (tokenList.length === 0) return;
+
+    const payload = {
+      registration_ids: tokenList,
+      notification: {
+        title: "Yeni Paket Talebi! 📦",
+        body: `${order.pickup_address} -> ${order.delivery_address}`,
+        sound: "default",
+        click_action: "FCM_PLUGIN_ACTIVITY",
+        icon: "fcm_push_icon"
+      },
+      data: {
+        orderId: order.id,
+        type: "new_order"
+      },
+      priority: "high"
+    };
+
+    const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `key=${fcmServerKey}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    console.log("FCM Push Notification Result:", result);
+  } catch (error) {
+    console.error("Error sending push notification:", error);
   }
 }
 
@@ -201,6 +247,14 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS fcm_tokens (
+    user_id TEXT,
+    token TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(user_id, token),
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
 `);
 
 // Log database status
@@ -255,6 +309,7 @@ async function startServer() {
   const wss = new WebSocketServer({ server });
   const PORT = Number(process.env.PORT) || 3000;
 
+  app.use(cors());
   app.use(express.json());
 
   // Health check endpoint for Render
@@ -390,6 +445,18 @@ async function startServer() {
       });
     } else {
       res.status(401).json({ error: "Invalid credentials" });
+    }
+  });
+
+  app.post("/api/auth/fcm-token", (req, res) => {
+    const { userId, token } = req.body;
+    if (!userId || !token) return res.status(400).json({ error: "Missing data" });
+    try {
+      db.prepare("INSERT OR REPLACE INTO fcm_tokens (user_id, token, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)")
+        .run(userId, token);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Token save failed" });
     }
   });
 
@@ -540,6 +607,9 @@ async function startServer() {
       
       // Send WhatsApp notification to group via webhook
       sendWhatsAppNotification(order);
+
+      // Send Push Notification to Couriers
+      sendPushNotificationToCouriers(order);
 
       broadcast({
         type: "new_order",
