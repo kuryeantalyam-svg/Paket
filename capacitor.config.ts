@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Antalya Teslimat',
   webDir: 'dist',
   server: {
-    androidScheme: 'https',
+    androidScheme: 'http',
     allowNavigation: ['*']
   }
 };

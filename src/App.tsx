@@ -1080,6 +1080,27 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
                 >
                   {isLogin ? 'Giriş Yap' : 'Kayıt Ol'}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setError('Bağlantı test ediliyor...');
+                    try {
+                      const res = await fetch(API_BASE_URL + '/api/health', { mode: 'cors' });
+                      const data = await res.json();
+                      if (data.status === 'ok') {
+                        setError('✅ Bağlantı Başarılı! Sunucu aktif.');
+                      } else {
+                        setError('❌ Sunucu yanıt verdi ama durum "ok" değil.');
+                      }
+                    } catch (err) {
+                      setError(`❌ Bağlantı Başarısız: ${err instanceof Error ? err.message : String(err)}`);
+                    }
+                  }}
+                  className="w-full mt-4 text-indigo-600 text-sm font-bold hover:underline"
+                >
+                  Bağlantıyı Test Et
+                </button>
               </form>
 
               <div className="mt-8 pt-6 border-t border-slate-100 text-center space-y-4">
