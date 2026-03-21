@@ -69,7 +69,7 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 const API_BASE_URL = Capacitor.isNativePlatform() 
-  ? 'https://ais-dev-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app' 
+  ? 'https://ais-pre-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app' 
   : '';
 
 const ANTALYA_COORDS: [number, number] = [36.8841, 30.7056];
@@ -761,6 +761,11 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
     }
   };
 
+  useEffect(() => {
+    console.log("Capacitor isNativePlatform:", Capacitor.isNativePlatform());
+    console.log("API_BASE_URL:", API_BASE_URL);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -768,8 +773,10 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
     const body = isLogin ? { email, password } : { email, password, role, fullName, phone };
 
     try {
+      console.log(`Attempting ${isLogin ? 'login' : 'register'} to: ${endpoint}`);
       const res = await fetch(endpoint, {
         method: 'POST',
+        mode: 'cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
@@ -790,7 +797,8 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
       }
     } catch (err) {
       console.error("Auth error:", err);
-      setError(`Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin. (Hedef: ${endpoint})`);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(`Sunucuya bağlanılamadı. Hata: ${errorMessage}. (Hedef: ${endpoint})`);
     }
   };
 

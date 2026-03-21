@@ -309,7 +309,20 @@ async function startServer() {
   const wss = new WebSocketServer({ server });
   const PORT = Number(process.env.PORT) || 3000;
 
-  app.use(cors());
+  app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: '*',
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+  }));
+
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+  });
+
   app.use(express.json());
 
   // Health check endpoint for Render
