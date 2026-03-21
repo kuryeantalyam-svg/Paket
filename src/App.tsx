@@ -68,12 +68,18 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
+const RENDER_URL = 'https://paket-wyne.onrender.com';
 const DEV_URL = 'https://ais-dev-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app';
 const PRE_URL = 'https://ais-pre-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app';
 
-const API_BASE_URL = Capacitor.isNativePlatform() 
-  ? PRE_URL 
-  : '';
+// APK'lar için Render sunucusu kalıcı ve sorunsuz çözümdür
+const DEFAULT_API_URL = Capacitor.isNativePlatform() ? RENDER_URL : '';
+let API_BASE_URL = localStorage.getItem('custom_api_url') || DEFAULT_API_URL;
+
+const setApiUrl = (url: string) => {
+  localStorage.setItem('custom_api_url', url);
+  window.location.reload();
+};
 
 // Helper function to handle API calls across platforms
 const fetchApi = async (url: string, options: any = {}) => {
@@ -1118,20 +1124,51 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
                     try {
                       const res = await fetchApi(API_BASE_URL + '/api/health');
                       const data = await res.json();
-                      console.log("Health check response:", data);
+                      
+                      if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+                        setError('⚠️ Google Güvenlik Engeli: Bu URL (run.app) APK içinden doğrudan erişime kapalıdır. Lütfen uygulamayı tarayıcıdan (Chrome) açarak kullanın.');
+                        return;
+                      }
+
                       if (data && data.status === 'ok') {
                         setError('✅ Bağlantı Başarılı! Sunucu aktif.');
                       } else {
-                        setError(`❌ Sunucu yanıt verdi: ${JSON.stringify(data)}`);
+                        setError(`❌ Sunucu yanıt verdi: ${JSON.stringify(data).substring(0, 100)}...`);
                       }
                     } catch (err) {
-                      setError(`❌ Bağlantı Başarısız: ${err instanceof Error ? err.message : String(err)}`);
+                      setError(`❌ Bağlantı Başarısız: Sunucuya ulaşılamıyor. (CORS veya Ağ Hatası)`);
                     }
                   }}
                   className="w-full mt-4 text-indigo-600 text-sm font-bold hover:underline"
                 >
                   Bağlantıyı Test Et
                 </button>
+
+                <div className="mt-8 pt-6 border-t border-slate-100">
+                  <p className="text-[10px] text-slate-400 text-center uppercase tracking-widest mb-4">Sunucu Ayarları (Google Play Hazır)</p>
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      type="button"
+                      onClick={() => setApiUrl(RENDER_URL)}
+                      className={cn(
+                        "text-[10px] py-2 rounded-lg border transition-all",
+                        API_BASE_URL === RENDER_URL ? "bg-emerald-50 border-emerald-200 text-emerald-600 font-bold" : "border-slate-200 text-slate-400"
+                      )}
+                    >
+                      Render Sunucusu (Aktif / Google Play)
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setApiUrl(DEV_URL)}
+                      className={cn(
+                        "text-[10px] py-2 rounded-lg border transition-all",
+                        API_BASE_URL === DEV_URL ? "bg-indigo-50 border-indigo-200 text-indigo-600 font-bold" : "border-slate-200 text-slate-400"
+                      )}
+                    >
+                      Yedek Sunucu (DEV)
+                    </button>
+                  </div>
+                </div>
               </form>
 
               <div className="mt-8 pt-6 border-t border-slate-100 text-center space-y-4">
