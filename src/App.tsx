@@ -70,11 +70,11 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || (Capacitor.isNativePlatform() 
-  ? (import.meta.env.DEV 
-      ? 'https://ais-dev-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app' 
-      : 'https://ais-pre-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app')
-  : '');
+const API_BASE_URL = (Capacitor.isNativePlatform() 
+  ? 'https://ais-pre-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app' 
+  : (import.meta.env.VITE_API_URL || ''));
+
+console.log('API_BASE_URL:', API_BASE_URL);
 
 const ANTALYA_COORDS: [number, number] = [36.8841, 30.7056];
 
@@ -701,7 +701,7 @@ function CourierApplicationScreen({ onBack, onLogin }: { onBack: () => void, onL
   );
 }
 
-function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplication }: { onLogin: (user: UserAccount) => void, expectedRole: AppRole, onAdminTrigger: () => void, onCourierApplication: () => void }) {
+function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplication, serverStatus, serverError }: { onLogin: (user: UserAccount) => void, expectedRole: AppRole, onAdminTrigger: () => void, onCourierApplication: () => void, serverStatus: 'checking' | 'online' | 'offline', serverError: string | null }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -714,27 +714,6 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
     show: false,
     type: 'terms'
   });
-
-  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
-
-  useEffect(() => {
-    const checkServer = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/health`);
-        if (res.ok) {
-          setServerStatus('online');
-        } else {
-          setServerStatus('offline');
-        }
-      } catch (e) {
-        console.error("Server health check failed:", e);
-        setServerStatus('offline');
-      }
-    };
-    checkServer();
-    const interval = setInterval(checkServer, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
@@ -846,6 +825,45 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
             <MapPin className="w-3 h-3" />
             Antalya İçi Hızlı Teslimat
           </div>
+
+          {serverStatus === 'offline' && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mt-4 p-6 bg-rose-50 border-2 border-rose-200 rounded-3xl text-left shadow-xl shadow-rose-100"
+            >
+              <div className="flex items-center gap-3 text-rose-600 mb-3">
+                <div className="p-2 bg-rose-100 rounded-xl">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest">Bağlantı Hatası</h3>
+                  <p className="text-[10px] text-rose-400 font-bold">Sunucuya Erişilemiyor</p>
+                </div>
+              </div>
+              
+              <div className="bg-white/50 rounded-xl p-3 border border-rose-100">
+                <p className="text-[11px] text-rose-700 font-mono break-all leading-relaxed">
+                  {serverError || "Bilinmeyen bir ağ hatası oluştu. Lütfen internetinizi kontrol edin."}
+                </p>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-rose-100 flex flex-col gap-3">
+                <div className="flex justify-between items-center text-[10px] text-rose-400 font-bold uppercase tracking-tighter">
+                  <span>Platform: {Capacitor.getPlatform()}</span>
+                  <span>Hedef: {API_BASE_URL.split('//')[1]?.split('.')[0] || 'Bilinmiyor'}</span>
+                </div>
+                
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="w-full py-3 bg-rose-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 active:scale-95"
+                >
+                  Yeniden Bağlanmayı Dene
+                </button>
+              </div>
+            </motion.div>
+          )}
+
           <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight">
             Antalya'nın En Akıllı <span className="text-indigo-600">Kurye Ağı</span>
           </h1>
@@ -1469,6 +1487,32 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
 }
 
 export default function App() {
+  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkServer = async () => {
+      const endpoint = `${API_BASE_URL}/api/health`;
+      try {
+        const res = await fetch(endpoint);
+        if (res.ok) {
+          setServerStatus('online');
+          setServerError(null);
+        } else {
+          setServerStatus('offline');
+          setServerError(`Sunucu hata döndürdü: ${res.status} ${res.statusText} (Hedef: ${endpoint})`);
+        }
+      } catch (e) {
+        console.error("Server health check failed:", e);
+        setServerStatus('offline');
+        setServerError(`Sunucuya bağlanılamadı: ${e instanceof Error ? e.message : String(e)} (Hedef: ${endpoint})`);
+      }
+    };
+    checkServer();
+    const interval = setInterval(checkServer, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const [user, setUser] = useState<UserAccount | null>(() => {
     const saved = localStorage.getItem('smartpack_user');
     return saved ? JSON.parse(saved) : null;
@@ -2377,6 +2421,8 @@ export default function App() {
         setUser(u);
         setRole(u.role);
       }} 
+      serverStatus={serverStatus}
+      serverError={serverError}
     />;
   }
 
@@ -2391,6 +2437,18 @@ export default function App() {
         </div>
         
         <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
+            <div className={cn(
+              "w-2 h-2 rounded-full",
+              serverStatus === 'online' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : 
+              serverStatus === 'offline' ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]" : "bg-slate-300 animate-pulse"
+            )}></div>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              {serverStatus === 'online' ? "Sistem Aktif" : 
+               serverStatus === 'offline' ? "Bağlantı Yok" : "Kontrol..."}
+            </span>
+          </div>
+
           {user && (
             <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100">
               <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
