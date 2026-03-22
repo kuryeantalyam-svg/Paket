@@ -10,6 +10,14 @@ import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
 
+console.log('Sunucu başlatılıyor...');
+process.on('uncaughtException', (err) => {
+  console.error('Beklenmedik hata:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Beklenmedik reddedilme:', reason);
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

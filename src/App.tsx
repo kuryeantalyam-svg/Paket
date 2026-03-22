@@ -69,7 +69,9 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 const API_BASE_URL = Capacitor.isNativePlatform() 
-  ? 'https://ais-pre-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app' 
+  ? (import.meta.env.DEV 
+      ? 'https://ais-dev-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app' 
+      : 'https://ais-pre-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app')
   : '';
 
 const ANTALYA_COORDS: [number, number] = [36.8841, 30.7056];
