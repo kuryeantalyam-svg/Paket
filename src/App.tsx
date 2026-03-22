@@ -44,6 +44,12 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Capacitor } from '@capacitor/core';
+import { 
+  PushNotifications, 
+  PushNotificationSchema, 
+  Token, 
+  ActionPerformed 
+} from '@capacitor/push-notifications';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -1451,6 +1457,48 @@ export default function App() {
   const activeOrderRef = useRef<Order | null>(null);
 
   const [isCourierApplicationPage, setIsCourierApplicationPage] = useState(false);
+
+  // Push Notifications Setup
+  useEffect(() => {
+    if (Capacitor.isNativePlatform() && role === 'courier' && user) {
+      // Request permission to use push notifications
+      PushNotifications.requestPermissions().then(result => {
+        if (result.receive === 'granted') {
+          PushNotifications.register();
+        }
+      });
+
+      // On success, we should be able to receive notifications
+      PushNotifications.addListener('registration', (token: Token) => {
+        console.log('Push registration success, token: ' + token.value);
+        // Send the token to your server
+        fetch(`${API_BASE_URL}/api/auth/fcm-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, token: token.value })
+        }).catch(err => console.error("Failed to save FCM token:", err));
+      });
+
+      // Some error occurred
+      PushNotifications.addListener('registrationError', (error: any) => {
+        console.error('Error on registration: ' + JSON.stringify(error));
+      });
+
+      // Show us the notification payload if the app is open on our device
+      PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
+        console.log('Push received: ' + JSON.stringify(notification));
+      });
+
+      // Method called when tapping on a notification
+      PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
+        console.log('Push action performed: ' + JSON.stringify(action));
+      });
+
+      return () => {
+        PushNotifications.removeAllListeners();
+      };
+    }
+  }, [role, user]);
 
   // URL Path Handling for SEO and Deep Linking
   useEffect(() => {
