@@ -10,19 +10,28 @@ import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const dbPath = process.env.DATABASE_PATH || "smartpack.db";
+
 console.log('Sunucu başlatılıyor...');
+console.log('Veritabanı yolu:', dbPath);
+let db: any;
+try {
+  db = new Database(dbPath);
+  console.log('Veritabanı bağlantısı başarılı.');
+} catch (err) {
+  console.error('Veritabanı bağlantı hatası:', err);
+  process.exit(1);
+}
+
 process.on('uncaughtException', (err) => {
   console.error('Beklenmedik hata:', err);
 });
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Beklenmedik reddedilme:', reason);
 });
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const dbPath = process.env.DATABASE_PATH || "smartpack.db";
-const db = new Database(dbPath);
 
 // Email Transporter Setup
 const transporter = nodemailer.createTransport({

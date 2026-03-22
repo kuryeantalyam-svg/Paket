@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Package, 
@@ -713,6 +714,27 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
     show: false,
     type: 'terms'
   });
+
+  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+
+  useEffect(() => {
+    const checkServer = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/health`);
+        if (res.ok) {
+          setServerStatus('online');
+        } else {
+          setServerStatus('offline');
+        }
+      } catch (e) {
+        console.error("Server health check failed:", e);
+        setServerStatus('offline');
+      }
+    };
+    checkServer();
+    const interval = setInterval(checkServer, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
@@ -1761,27 +1783,6 @@ export default function App() {
     localStorage.setItem('smartpack_courier_id', newId);
     return newId;
   }, [user]);
-
-  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
-
-  useEffect(() => {
-    const checkServer = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/health`);
-        if (res.ok) {
-          setServerStatus('online');
-        } else {
-          setServerStatus('offline');
-        }
-      } catch (e) {
-        console.error("Server health check failed:", e);
-        setServerStatus('offline');
-      }
-    };
-    checkServer();
-    const interval = setInterval(checkServer, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const requestPermissions = async () => {
