@@ -851,7 +851,7 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
               <div className="mt-4 pt-4 border-t border-rose-100 flex flex-col gap-3">
                 <div className="flex justify-between items-center text-[10px] text-rose-400 font-bold uppercase tracking-tighter">
                   <span>Platform: {Capacitor.getPlatform()}</span>
-                  <span>Hedef: {API_BASE_URL.split('//')[1]?.split('.')[0] || 'Bilinmiyor'}</span>
+                  <span className="truncate ml-2">URL: {API_BASE_URL}</span>
                 </div>
                 
                 <button 
