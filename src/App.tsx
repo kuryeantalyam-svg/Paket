@@ -71,7 +71,7 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 const API_BASE_URL = (Capacitor.isNativePlatform() 
-  ? 'https://ais-pre-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app' 
+  ? 'https://paket-wnye.onrender.com' 
   : (import.meta.env.VITE_API_URL || ''));
 
 console.log('API_BASE_URL:', API_BASE_URL);
