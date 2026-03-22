@@ -153,14 +153,15 @@ async function sendPushNotificationToCouriers(order: any) {
         title: "Yeni Paket Talebi! 📦",
         body: `${order.pickup_address} -> ${order.delivery_address}`,
         sound: "default",
-        click_action: "FCM_PLUGIN_ACTIVITY",
-        icon: "fcm_push_icon"
+        badge: "1"
       },
       data: {
         orderId: order.id,
-        type: "new_order"
+        type: "new_order",
+        click_action: "FLUTTER_NOTIFICATION_CLICK" // Common fallback for some plugins
       },
-      priority: "high"
+      priority: "high",
+      content_available: true
     };
 
     const response = await fetch('https://fcm.googleapis.com/fcm/send', {

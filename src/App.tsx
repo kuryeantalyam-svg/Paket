@@ -809,18 +809,6 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
           animate={{ opacity: 1, y: 0 }}
           className="text-center space-y-4"
         >
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div className={cn(
-              "w-2 h-2 rounded-full",
-              serverStatus === 'online' ? "bg-emerald-500" : 
-              serverStatus === 'offline' ? "bg-rose-500" : "bg-slate-300 animate-pulse"
-            )} />
-            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
-              {serverStatus === 'online' ? "Sunucu Bağlantısı Aktif" : 
-               serverStatus === 'offline' ? "Sunucu Bağlantısı Yok" : "Sunucu Kontrol Ediliyor..."}
-            </span>
-          </div>
-
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-widest">
             <MapPin className="w-3 h-3" />
             Antalya İçi Hızlı Teslimat
@@ -2437,17 +2425,14 @@ export default function App() {
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
-            <div className={cn(
-              "w-2 h-2 rounded-full",
-              serverStatus === 'online' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : 
-              serverStatus === 'offline' ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]" : "bg-slate-300 animate-pulse"
-            )}></div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-              {serverStatus === 'online' ? "Sistem Aktif" : 
-               serverStatus === 'offline' ? "Bağlantı Yok" : "Kontrol..."}
-            </span>
-          </div>
+          {serverStatus === 'offline' && (
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-rose-50 rounded-xl border border-rose-100">
+              <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]"></div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-rose-500">
+                Bağlantı Yok
+              </span>
+            </div>
+          )}
 
           {user && (
             <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100">
@@ -2544,16 +2529,6 @@ export default function App() {
               {view === 'addresses' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
             </button>
           )}
-          <button 
-            onClick={() => setView('mobile-app')}
-            className={cn(
-              "pb-4 px-2 text-sm font-bold transition-all relative",
-              view === 'mobile-app' ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
-            )}
-          >
-            Mobil Uygulama
-            {view === 'mobile-app' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
-          </button>
         </div>
 
 
