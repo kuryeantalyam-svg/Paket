@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 import { 
   PushNotifications, 
   PushNotificationSchema, 
@@ -68,11 +69,11 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-const API_BASE_URL = Capacitor.isNativePlatform() 
+const API_BASE_URL = import.meta.env.VITE_API_URL || (Capacitor.isNativePlatform() 
   ? (import.meta.env.DEV 
       ? 'https://ais-dev-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app' 
       : 'https://ais-pre-cpjafxtnmg27szq65cbjcm-5052813439.europe-west2.run.app')
-  : '';
+  : '');
 
 const ANTALYA_COORDS: [number, number] = [36.8841, 30.7056];
 
@@ -770,6 +771,7 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
     const body = isLogin ? { email, password } : { email, password, role, fullName, phone };
 
     try {
+      console.log(`Auth attempt: ${endpoint}`);
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -791,8 +793,9 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
         setError(data.error || 'Bir hata oluştu');
       }
     } catch (err) {
-      console.error("Auth error:", err);
-      setError(`Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin. (Hedef: ${endpoint})`);
+      console.error("Auth error details:", err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(`Sunucuya bağlanılamadı. Hata: ${errorMessage}. Lütfen internet bağlantınızı kontrol edin. (Hedef: ${endpoint})`);
     }
   };
 
@@ -805,6 +808,18 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
           animate={{ opacity: 1, y: 0 }}
           className="text-center space-y-4"
         >
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className={cn(
+              "w-2 h-2 rounded-full",
+              serverStatus === 'online' ? "bg-emerald-500" : 
+              serverStatus === 'offline' ? "bg-rose-500" : "bg-slate-300 animate-pulse"
+            )} />
+            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
+              {serverStatus === 'online' ? "Sunucu Bağlantısı Aktif" : 
+               serverStatus === 'offline' ? "Sunucu Bağlantısı Yok" : "Sunucu Kontrol Ediliyor..."}
+            </span>
+          </div>
+
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-widest">
             <MapPin className="w-3 h-3" />
             Antalya İçi Hızlı Teslimat
@@ -1747,6 +1762,41 @@ export default function App() {
     return newId;
   }, [user]);
 
+  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+
+  useEffect(() => {
+    const checkServer = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/health`);
+        if (res.ok) {
+          setServerStatus('online');
+        } else {
+          setServerStatus('offline');
+        }
+      } catch (e) {
+        console.error("Server health check failed:", e);
+        setServerStatus('offline');
+      }
+    };
+    checkServer();
+    const interval = setInterval(checkServer, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const requestPermissions = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const permissions = await Geolocation.requestPermissions();
+          console.log('Geolocation permissions:', permissions);
+        } catch (e) {
+          console.error('Error requesting geolocation permissions:', e);
+        }
+      }
+    };
+    requestPermissions();
+  }, []);
+
   useEffect(() => {
     if (logoClicks >= 5) {
       setRole('admin');
@@ -1762,9 +1812,34 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let watchId: string | null = null;
     if (role === 'courier' && socketConnected) {
-      if ("geolocation" in navigator) {
-        console.log("Starting geolocation watch...");
+      if (Capacitor.isNativePlatform()) {
+        console.log("Starting native geolocation watch...");
+        Geolocation.watchPosition(
+          { enableHighAccuracy: true },
+          (position, err) => {
+            if (err) {
+              console.error("Native Geolocation error:", err);
+              return;
+            }
+            if (position) {
+              setMyLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+              if (socketRef.current?.readyState === WebSocket.OPEN) {
+                socketRef.current.send(JSON.stringify({
+                  type: 'location_update',
+                  courierId: myCourierId,
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude
+                }));
+              }
+            }
+          }
+        ).then(id => {
+          watchId = id;
+        });
+      } else if ("geolocation" in navigator) {
+        console.log("Starting browser geolocation watch...");
         watchIdRef.current = navigator.geolocation.watchPosition(
           (position) => {
             setMyLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
@@ -1786,6 +1861,9 @@ export default function App() {
     }
 
     return () => {
+      if (watchId !== null) {
+        Geolocation.clearWatch({ id: watchId });
+      }
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
