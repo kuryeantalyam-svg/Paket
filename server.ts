@@ -6,6 +6,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import nodemailer from "nodemailer";
+import admin from "firebase-admin";
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
@@ -43,6 +44,20 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
   },
 });
+
+// Firebase Admin Setup (New Method)
+let firebaseAdminApp: any = null;
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    firebaseAdminApp = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    console.log("Firebase Admin initialized successfully.");
+  } catch (error) {
+    console.error("Firebase Admin initialization failed:", error);
+  }
+}
 
 async function sendWhatsAppNotification(order: any) {
   const webhookUrl = process.env.WHATSAPP_WEBHOOK_URL;
@@ -136,8 +151,10 @@ async function sendEmailToCouriers(order: any) {
 
 async function sendPushNotificationToCouriers(order: any) {
   const fcmServerKey = process.env.FCM_SERVER_KEY;
-  if (!fcmServerKey) {
-    console.log("FCM_SERVER_KEY missing. Skipping push notification.");
+  const hasServiceAccount = !!process.env.FIREBASE_SERVICE_ACCOUNT;
+
+  if (!fcmServerKey && !hasServiceAccount) {
+    console.log("FCM configuration missing. Skipping push notification.");
     return;
   }
 
@@ -147,34 +164,63 @@ async function sendPushNotificationToCouriers(order: any) {
 
     if (tokenList.length === 0) return;
 
-    const payload = {
-      registration_ids: tokenList,
-      notification: {
-        title: "Yeni Paket Talebi! 📦",
-        body: `${order.pickup_address} -> ${order.delivery_address}`,
-        sound: "default",
-        badge: "1"
-      },
-      data: {
-        orderId: order.id,
-        type: "new_order",
-        click_action: "FLUTTER_NOTIFICATION_CLICK" // Common fallback for some plugins
-      },
-      priority: "high",
-      content_available: true
-    };
+    // Use Firebase Admin (New Method) if available
+    if (firebaseAdminApp) {
+      const message = {
+        notification: {
+          title: "Yeni Paket Talebi! 📦",
+          body: `${order.pickup_address} -> ${order.delivery_address}`
+        },
+        data: {
+          orderId: String(order.id),
+          type: "new_order"
+        },
+        tokens: tokenList,
+        android: {
+          priority: "high" as const,
+          notification: {
+            sound: "default",
+            badge: "1"
+          }
+        }
+      };
 
-    const response = await fetch('https://fcm.googleapis.com/fcm/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `key=${fcmServerKey}`
-      },
-      body: JSON.stringify(payload)
-    });
+      const response = await admin.messaging().sendEachForMulticast(message);
+      console.log(`FCM V1 Result: ${response.successCount} success, ${response.failureCount} failure`);
+      return;
+    }
 
-    const result = await response.json();
-    console.log("FCM Push Notification Result:", result);
+    // Fallback to Legacy Method (Old Method)
+    if (fcmServerKey) {
+      const payload = {
+        registration_ids: tokenList,
+        notification: {
+          title: "Yeni Paket Talebi! 📦",
+          body: `${order.pickup_address} -> ${order.delivery_address}`,
+          sound: "default",
+          badge: "1"
+        },
+        data: {
+          orderId: order.id,
+          type: "new_order",
+          click_action: "FLUTTER_NOTIFICATION_CLICK"
+        },
+        priority: "high",
+        content_available: true
+      };
+
+      const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `key=${fcmServerKey}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+      console.log("FCM Legacy Result:", result);
+    }
   } catch (error) {
     console.error("Error sending push notification:", error);
   }
