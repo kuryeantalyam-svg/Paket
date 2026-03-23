@@ -479,14 +479,35 @@ async function startServer() {
     }
   });
 
+  app.get("/api/admin/debug-fcm", adminAuth, (req, res) => {
+    try {
+      const tokenCount = db.prepare("SELECT COUNT(*) as count FROM fcm_tokens").get() as { count: number };
+      const courierTokenCount = db.prepare("SELECT COUNT(*) as count FROM fcm_tokens WHERE user_id IN (SELECT id FROM users WHERE role = 'courier')").get() as { count: number };
+      const hasKey = !!process.env.FCM_SERVER_KEY;
+      
+      res.json({
+        tokenCount: tokenCount.count,
+        courierTokenCount: courierTokenCount.count,
+        hasFcmServerKey: hasKey,
+        fcmKeyLength: process.env.FCM_SERVER_KEY?.length || 0,
+        googleServicesJsonExists: fs.existsSync(path.join(__dirname, 'android/app/google-services.json'))
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Debug failed", details: String(error) });
+    }
+  });
+
   app.post("/api/auth/fcm-token", (req, res) => {
     const { userId, token } = req.body;
+    console.log(`FCM token registration request: userId=${userId}, token=${token?.substring(0, 10)}...`);
     if (!userId || !token) return res.status(400).json({ error: "Missing data" });
     try {
       db.prepare("INSERT OR REPLACE INTO fcm_tokens (user_id, token, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)")
         .run(userId, token);
+      console.log(`FCM token saved for user ${userId}`);
       res.json({ success: true });
     } catch (error) {
+      console.error(`FCM token save failed for user ${userId}:`, error);
       res.status(500).json({ error: "Token save failed" });
     }
   });

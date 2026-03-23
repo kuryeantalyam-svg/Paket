@@ -1532,10 +1532,15 @@ export default function App() {
   // Push Notifications Setup
   useEffect(() => {
     if (Capacitor.isNativePlatform() && role === 'courier' && user) {
+      console.log('Push notification setup started for courier:', user.id);
       // Request permission to use push notifications
       PushNotifications.requestPermissions().then(result => {
+        console.log('Push notification permission result:', result.receive);
         if (result.receive === 'granted') {
+          console.log('Registering for push notifications...');
           PushNotifications.register();
+        } else {
+          console.warn('Push notification permission denied');
         }
       });
 
