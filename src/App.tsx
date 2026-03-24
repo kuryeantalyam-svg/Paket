@@ -1520,7 +1520,6 @@ export default function App() {
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [onlineCouriers, setOnlineCouriers] = useState(0);
-  const [webhookConfigured, setWebhookConfigured] = useState(false);
   const [activeOrder, setActiveOrder] = useState<Order | null>(() => {
     const saved = localStorage.getItem('smartpack_active_order');
     return saved ? JSON.parse(saved) : null;
@@ -1531,8 +1530,8 @@ export default function App() {
 
   // Push Notifications Setup
   useEffect(() => {
-    if (Capacitor.isNativePlatform() && role === 'courier' && user) {
-      console.log('Push notification setup started for courier:', user.id);
+    if (Capacitor.isNativePlatform() && user) {
+      console.log('Push notification setup started for user:', user.id);
       // Request permission to use push notifications
       PushNotifications.requestPermissions().then(result => {
         console.log('Push notification permission result:', result.receive);
@@ -1574,7 +1573,7 @@ export default function App() {
         PushNotifications.removeAllListeners();
       };
     }
-  }, [role, user]);
+  }, [user]);
 
   // URL Path Handling for SEO and Deep Linking
   useEffect(() => {
@@ -1825,10 +1824,13 @@ export default function App() {
     const requestPermissions = async () => {
       if (Capacitor.isNativePlatform()) {
         try {
-          const permissions = await Geolocation.requestPermissions();
-          console.log('Geolocation permissions:', permissions);
+          const geoPermissions = await Geolocation.requestPermissions();
+          console.log('Geolocation permissions:', geoPermissions);
+          
+          const pushPermissions = await PushNotifications.requestPermissions();
+          console.log('Push notification permissions:', pushPermissions);
         } catch (e) {
-          console.error('Error requesting geolocation permissions:', e);
+          console.error('Error requesting permissions:', e);
         }
       }
     };
@@ -2092,7 +2094,6 @@ export default function App() {
         const adminHeaders = { 'x-admin-password': adminPasswordInput || '5807' };
         fetch(API_BASE_URL + '/api/admin/stats', { headers: adminHeaders }).then(res => res.json()).then(data => {
           setOnlineCouriers(data.onlineCouriers);
-          setWebhookConfigured(data.webhookConfigured);
         });
       }
       // Fetch online couriers for everyone to show on live map
@@ -3421,15 +3422,6 @@ export default function App() {
                                     <Phone className="w-5 h-5" />
                                   </a>
                                 )}
-                                <a 
-                                  href={`https://wa.me/?text=${encodeURIComponent(`*Yeni Paket Talebi!* 📦\n\n*Takip No:* #${activeOrder.id}\n*Alım:* ${activeOrder.pickup_address}\n*Teslim:* ${activeOrder.delivery_address}\n*Araç:* ${activeOrder.vehicle_type}\n\nAntalya Teslimat Uygulaması`)}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="p-4 bg-emerald-500 text-white rounded-2xl shadow-sm hover:bg-emerald-600 transition-colors"
-                                  title="WhatsApp ile Paylaş"
-                                >
-                                  <MessageCircle className="w-5 h-5" />
-                                </a>
                               </div>
                             </div>
                           </div>

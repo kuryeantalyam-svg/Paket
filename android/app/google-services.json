@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "321714650651",
+    "project_id": "antalyateslimat-b2049",
+    "storage_bucket": "antalyateslimat-b2049.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:321714650651:android:5f8549abf36466a72ac2be",
+        "android_client_info": {
+          "package_name": "com.antalyateslimat.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-uJXZuArEbzcgCYb1lZv1qSUV7H9MV3w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:321714650651:android:3a92fe93fcf414572ac2be",
+        "android_client_info": {
+          "package_name": "com.kuryeantalya.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-uJXZuArEbzcgCYb1lZv1qSUV7H9MV3w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

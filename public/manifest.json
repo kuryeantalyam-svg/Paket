@@ -1,6 +1,6 @@
 {
-  "name": "SmartPack Antalya Kurye",
-  "short_name": "SmartPack",
+  "name": "Kurye Antalya",
+  "short_name": "Kurye Antalya",
   "description": "Antalya'nın Akıllı Kurye Takip Sistemi",
   "start_url": "/",
   "display": "standalone",

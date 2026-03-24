@@ -59,59 +59,6 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   }
 }
 
-async function sendWhatsAppNotification(order: any) {
-  const webhookUrl = process.env.WHATSAPP_WEBHOOK_URL;
-  
-  if (!webhookUrl) {
-    console.log("WhatsApp Webhook URL missing. Skipping WhatsApp notification.");
-    return { success: false, error: "Webhook URL missing." };
-  }
-
-  try {
-    const vehicleInfo = order.vehicle_type === 'motorcycle' ? 'Motosiklet' : 
-                       order.vehicle_type === 'car' ? 'Araba' : 'Panelvan';
-    
-    const message = `*Yeni Paket Talebi!* 📦\n\n` +
-      `*Sipariş No:* #${order.id}\n` +
-      `*Müşteri:* ${order.customer_name}\n` +
-      `*Telefon:* ${order.customer_phone || 'Belirtilmedi'}\n` +
-      `*Alım:* ${order.pickup_address}\n` +
-      `*Teslim:* ${order.delivery_address}\n` +
-      `*Araç:* ${vehicleInfo}\n` +
-      `*Paket:* ${order.package_type || 'Standart'}\n` +
-      `*Mesafe:* ${order.distance ? order.distance.toFixed(2) : '?'} km\n` +
-      `*Ödeme:* ${order.payment_method === 'sender' ? 'Gönderici Ödemeli' : 'Alıcı Ödemeli'}\n\n` +
-      `Uygulamaya git: ${process.env.APP_URL || 'SmartPack'}`;
-
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        text: message,
-        message: message,
-        orderId: order.id,
-        customerName: order.customer_name,
-        pickup: order.pickup_address,
-        delivery: order.delivery_address,
-        vehicle: vehicleInfo,
-        distance: order.distance,
-        timestamp: new Date().toISOString()
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Webhook error (${response.status}): ${errorText}`);
-    }
-
-    console.log("WhatsApp notification successfully sent to Albato.");
-    return { success: true };
-  } catch (error) {
-    console.error("WhatsApp notification failed:", error);
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
-  }
-}
-
 async function sendEmailToCouriers(order: any) {
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
     console.log("Email configuration missing. Skipping email notification.");
@@ -187,6 +134,28 @@ async function sendPushNotificationToCouriers(order: any) {
 
       const response = await admin.messaging().sendEachForMulticast(message);
       console.log(`FCM V1 Result: ${response.successCount} success, ${response.failureCount} failure`);
+      
+      if (response.failureCount > 0) {
+        const tokensToRemove: string[] = [];
+        response.responses.forEach((resp, idx) => {
+          if (!resp.success) {
+            const error = resp.error as any;
+            console.error(`FCM Token ${idx} failure:`, error);
+            
+            // If token is invalid or not registered, mark for removal
+            if (error?.code === 'messaging/registration-token-not-registered' || 
+                error?.code === 'messaging/invalid-registration-token') {
+              tokensToRemove.push(tokenList[idx]);
+            }
+          }
+        });
+
+        if (tokensToRemove.length > 0) {
+          console.log(`Removing ${tokensToRemove.length} invalid FCM tokens from database.`);
+          const placeholders = tokensToRemove.map(() => '?').join(',');
+          db.prepare(`DELETE FROM fcm_tokens WHERE token IN (${placeholders})`).run(...tokensToRemove);
+        }
+      }
       return;
     }
 
@@ -632,8 +601,7 @@ async function startServer() {
   app.get("/api/admin/stats", adminAuth, (req, res) => {
     const onlineCouriers = Array.from(clients.values())
       .filter(c => c.role === 'courier').length;
-    const webhookConfigured = !!process.env.WHATSAPP_WEBHOOK_URL;
-    res.json({ onlineCouriers, webhookConfigured });
+    res.json({ onlineCouriers });
   });
 
   app.post("/api/admin/notify", adminAuth, (req, res) => {
@@ -703,9 +671,6 @@ async function startServer() {
       // Send email notifications to couriers
       sendEmailToCouriers(order);
       
-      // Send WhatsApp notification to group via webhook
-      sendWhatsAppNotification(order);
-
       // Send Push Notification to Couriers
       sendPushNotificationToCouriers(order);
 

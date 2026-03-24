@@ -1,5 +1,5 @@
 {
-  "name": "Antalya Teslimat - Kurye Takip",
+  "name": "Kurye Antalya",
   "description": "Antalya'nın profesyonel kurye ve paket teslimat uygulaması. Canlı takip, kurye bildirimleri ve hızlı teslimat yönetimi.",
   "requestFramePermissions": [
     "geolocation",

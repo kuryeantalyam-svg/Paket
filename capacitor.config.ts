@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.kuryeantalya.app',
-  appName: 'Antalya Teslimat',
+  appName: 'Kurye Antalya',
   webDir: 'dist',
   server: {
     androidScheme: 'https'
