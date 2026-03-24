@@ -126,8 +126,7 @@ async function sendPushNotificationToCouriers(order: any) {
         android: {
           priority: "high" as const,
           notification: {
-            sound: "default",
-            badge: "1"
+            sound: "default"
           }
         }
       };
@@ -166,8 +165,7 @@ async function sendPushNotificationToCouriers(order: any) {
         notification: {
           title: "Yeni Paket Talebi! 📦",
           body: `${order.pickup_address} -> ${order.delivery_address}`,
-          sound: "default",
-          badge: "1"
+          sound: "default"
         },
         data: {
           orderId: order.id,
