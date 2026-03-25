@@ -124,12 +124,11 @@ async function sendPushNotificationToCouriers(order: any) {
         },
         tokens: tokenList,
         android: {
-          priority: "high" as const,
-          notification: {
-            sound: "default"
-          }
+          priority: "high" as const
         }
       };
+
+      console.log("Sending FCM Message:", JSON.stringify(message, null, 2));
 
       const response = await admin.messaging().sendEachForMulticast(message);
       console.log(`FCM V1 Result: ${response.successCount} success, ${response.failureCount} failure`);
@@ -139,12 +138,15 @@ async function sendPushNotificationToCouriers(order: any) {
         response.responses.forEach((resp, idx) => {
           if (!resp.success) {
             const error = resp.error as any;
-            console.error(`FCM Token ${idx} failure:`, error);
+            const errorCode = error?.code || error?.errorInfo?.code;
             
             // If token is invalid or not registered, mark for removal
-            if (error?.code === 'messaging/registration-token-not-registered' || 
-                error?.code === 'messaging/invalid-registration-token') {
+            if (errorCode === 'messaging/registration-token-not-registered' || 
+                errorCode === 'messaging/invalid-registration-token') {
+              console.log(`FCM: Stale token detected at index ${idx}, marking for removal.`);
               tokensToRemove.push(tokenList[idx]);
+            } else {
+              console.error(`FCM Token ${idx} unexpected failure:`, error.message || error);
             }
           }
         });

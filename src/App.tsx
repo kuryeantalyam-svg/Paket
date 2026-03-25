@@ -1477,6 +1477,7 @@ function AuthScreen({ onLogin, expectedRole, onAdminTrigger, onCourierApplicatio
 export default function App() {
   const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [serverError, setServerError] = useState<string | null>(null);
+  const [fcmToken, setFcmToken] = useState<string | null>(null);
 
   useEffect(() => {
     const checkServer = async () => {
@@ -1546,6 +1547,7 @@ export default function App() {
       // On success, we should be able to receive notifications
       PushNotifications.addListener('registration', (token: Token) => {
         console.log('Push registration success, token: ' + token.value);
+        setFcmToken(token.value);
         // Send the token to your server
         fetch(`${API_BASE_URL}/api/auth/fcm-token`, {
           method: 'POST',
@@ -3566,7 +3568,21 @@ export default function App() {
                 <div className="flex justify-between items-center">
                   <div>
                     <h2 className="text-3xl font-bold">Kurye Paneli</h2>
-                    <p className="text-slate-500 text-sm mt-1">Aktif talepleri yönetin.</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-slate-500 text-sm">Aktif talepleri yönetin.</p>
+                      {fcmToken && (
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(fcmToken);
+                            alert('FCM Token kopyalandı! Firebase Console\'da test için kullanabilirsiniz.');
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-100"
+                        >
+                          <Bell className="w-3 h-3" />
+                          FCM Token Kopyala
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-4 py-2 rounded-2xl text-xs font-bold border border-emerald-100">
                     <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
