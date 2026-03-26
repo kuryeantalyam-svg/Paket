@@ -1540,6 +1540,17 @@ export default function App() {
         if (result.receive === 'granted') {
           console.log('Registering for push notifications...');
           PushNotifications.register();
+
+          // Create a default notification channel for Android 8+
+          PushNotifications.createChannel({
+            id: 'default',
+            name: 'Genel Bildirimler',
+            description: 'Uygulama bildirimleri için varsayılan kanal',
+            importance: 5, // High importance
+            visibility: 1, // Public
+            vibration: true
+          }).then(() => console.log('Notification channel created successfully'))
+            .catch(err => console.error('Error creating notification channel:', err));
         } else {
           console.warn('Push notification permission denied');
         }
@@ -1566,6 +1577,12 @@ export default function App() {
       // Show us the notification payload if the app is open on our device
       PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
         console.log('Push received: ' + JSON.stringify(notification));
+        // If the app is in foreground, we might want to show a local notification or alert
+        // because Android doesn't show the heads-up notification when the app is open by default
+        if (notification.title || notification.body) {
+          // You can use a toast or a custom alert here
+          console.log('Foreground notification received:', notification.title, notification.body);
+        }
       });
 
       // Method called when tapping on a notification
