@@ -1478,6 +1478,7 @@ export default function App() {
   const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [serverError, setServerError] = useState<string | null>(null);
   const [fcmToken, setFcmToken] = useState<string | null>(null);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkServer = async () => {
@@ -1559,6 +1560,7 @@ export default function App() {
       // Some error occurred
       PushNotifications.addListener('registrationError', (error: any) => {
         console.error('Error on registration: ' + JSON.stringify(error));
+        setRegistrationError(JSON.stringify(error));
       });
 
       // Show us the notification payload if the app is open on our device
@@ -2512,6 +2514,16 @@ export default function App() {
           >
             Sipariş Geçmişi
             {view === 'history' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
+          </button>
+          <button 
+            onClick={() => setView('mobile-app')}
+            className={cn(
+              "pb-4 px-2 text-sm font-bold transition-all relative",
+              view === 'mobile-app' ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+            )}
+          >
+            Mobil Uygulama
+            {view === 'mobile-app' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />}
           </button>
           {role === 'courier' && (
             <button 
@@ -4029,6 +4041,51 @@ export default function App() {
               <p className="text-slate-500 max-w-lg mx-auto mb-8">
                 Uygulamamızı telefonunuza yükleyerek daha hızlı sipariş verebilir, kuryenizi anlık bildirimlerle takip edebilirsiniz.
               </p>
+
+              {/* FCM Debug Section */}
+              {Capacitor.isNativePlatform() && (
+                <div className="max-w-2xl mx-auto mb-8 p-6 bg-slate-50 rounded-[2rem] border border-slate-200 text-left">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
+                        <Bell className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900">Bildirim Testi</h3>
+                        <p className="text-[10px] text-slate-500">Firebase Console üzerinden test mesajı göndermek için tokeninizi kopyalayın.</p>
+                      </div>
+                    </div>
+                    {fcmToken ? (
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(fcmToken);
+                          alert('FCM Token kopyalandı! Firebase Console\'da test için kullanabilirsiniz.');
+                        }}
+                        className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center gap-2"
+                      >
+                        <History className="w-4 h-4" />
+                        Token Kopyala
+                      </button>
+                    ) : (
+                      <div className="px-4 py-2 bg-slate-200 text-slate-500 text-xs font-bold rounded-xl animate-pulse">
+                        Token Bekleniyor...
+                      </div>
+                    )}
+                  </div>
+                  <div className="bg-white p-4 rounded-xl border border-slate-200">
+                    <p className="text-[10px] text-slate-400 font-mono break-all">
+                      {registrationError ? (
+                        <span className="text-rose-500 font-bold">Hata: {registrationError}</span>
+                      ) : (
+                        fcmToken || 'Token henüz alınmadı. Lütfen bildirim izinlerini kontrol edin.'
+                      )}
+                    </p>
+                  </div>
+                  <p className="mt-4 text-[10px] text-slate-500 leading-relaxed italic">
+                    * Bildirim gelmiyorsa: Uygulama ayarlarından bildirim izinlerini kontrol edin, internet bağlantınızın aktif olduğundan emin olun ve Google Play Hizmetlerinin güncel olduğunu doğrulayın.
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
                 <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 text-left">
